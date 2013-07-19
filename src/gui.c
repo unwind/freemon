@@ -17,7 +17,7 @@ static gboolean evt_mainwindow_delete(GtkWidget *wid, const GdkEvent *evt, gpoin
 
 GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const char *title)
 {
-	GtkWidget	*win, *grid, *btn, *label;
+	GtkWidget	*win, *grid, *btn, *label, *scwin;
 
 	if(info == NULL)
 		return NULL;
@@ -39,7 +39,14 @@ GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const cha
 	gtk_grid_attach(GTK_GRID(grid), btn, 2, 0, 1, 1);
 
 	info->terminal = vte_terminal_new();
-	gtk_grid_attach(GTK_GRID(grid), info->terminal, 0, 1, 3, 1);
+	vte_terminal_set_size(VTE_TERMINAL(info->terminal), 80, 25);
+	gtk_widget_set_vexpand(info->terminal, TRUE);
+	scwin = gtk_scrolled_window_new(NULL, NULL);
+	gtk_container_add(GTK_CONTAINER(scwin), info->terminal);
+	const glong cw = vte_terminal_get_char_width(VTE_TERMINAL(info->terminal));
+	const glong ch = vte_terminal_get_char_width(VTE_TERMINAL(info->terminal));
+	gtk_widget_set_size_request(scwin, 80 * cw, 25 * ch);
+	gtk_grid_attach(GTK_GRID(grid), scwin, 0, 1, 3, 1);
 
 	gtk_container_add(GTK_CONTAINER(win), grid);
 
