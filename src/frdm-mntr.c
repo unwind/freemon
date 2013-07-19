@@ -10,11 +10,12 @@
 
 int main(int argc, char *argv[])
 {
+	GuiInfo		gui;
 	GtkWidget	*mw;
 
 	gtk_init(&argc, &argv);
 
-	mw = gui_mainwindow_open("frdm-mntr v" VERSION " by Emil Brink");
+	mw = gui_mainwindow_open(&gui, "frdm-mntr v" VERSION " by Emil Brink");
 	gtk_widget_show_all(mw);
 	gtk_main();
 

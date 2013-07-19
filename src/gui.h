@@ -6,7 +6,13 @@
 #define	GUI_H_
 
 #include <gtk/gtk.h>
+#include <vte/vte.h>
 
-GtkWidget	* gui_mainwindow_open(const char *title);
+typedef struct {
+	GtkEntry	*filename;
+	VteTerminal	*terminal;
+} GuiInfo;
+
+GtkWidget	* gui_mainwindow_open(GuiInfo *info, const char *title);
 
 #endif		/* GUI_H_ */
