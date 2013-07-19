@@ -6,7 +6,7 @@ PKGS	= vte-2.90
 
 CFLAGS	= -Wall -ansi -pedantic -std=c99 $(shell pkg-config --cflags $(PKGS))
 
-LIBS	= $(shell pkg-config --libs $(PKGS))
+LDLIBS	= $(shell pkg-config --libs $(PKGS))
 
 ALL	= frdm-mntr
 
@@ -14,7 +14,7 @@ ALL	= frdm-mntr
 
 # ----------------------------------------------------------------------
 
-frdm-mntr:	frdm-mntr.o
+frdm-mntr:	frdm-mntr.o gui.o
 
 # ----------------------------------------------------------------------
 
