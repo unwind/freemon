@@ -15,7 +15,7 @@
 typedef struct {
 	const gchar	*device;
 	gint		fd;
-	guint		handler;
+	guint		handle;
 } TtyInfo;
 
 /* ------------------------------------------------------------------- */

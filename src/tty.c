@@ -17,9 +17,7 @@ static gboolean cb_tty(gint fd, GIOCondition cond, gpointer user)
 	if(cond != G_IO_IN)
 		return FALSE;
 
-	printf("hello from tty device\n");
-
-	gchar buf[4096];
+	gchar buf[4096];	/* This should be plenty, for the real device. */
 	const ssize_t got = read(fd, buf, sizeof buf);
 	if(got > 0)
 	{
@@ -38,16 +36,17 @@ bool tty_open(TtyInfo *tty, GuiInfo *gui, const char *device)
 	tty->fd = open(device, O_RDONLY | O_NONBLOCK);
 	if(tty->fd >= 0)
 	{
-		tty->handler = g_unix_fd_add(tty->fd, G_IO_IN, cb_tty, gui->terminal);
+		tty->handle = g_unix_fd_add(tty->fd, G_IO_IN, cb_tty, gui->terminal);
 		printf("added '%s' as input source\n", device);
 	}
 	else
-		tty->handler = 0;
+		tty->handle = 0;
 
-	return tty->handler != 0;
+	return tty->handle != 0;
 }
 
 void tty_close(TtyInfo *tty)
 {
+	g_source_remove(tty->handle);
 	close(tty->fd);
 }
