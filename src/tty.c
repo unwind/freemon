@@ -24,6 +24,7 @@ static gboolean cb_tty(gint fd, GIOCondition cond, gpointer user)
 	if(got > 0)
 	{
 		printf("got %zd bytes\n", got);
+		vte_terminal_feed(VTE_TERMINAL(user), buf, got);
 	}
 	return TRUE;
 }
@@ -33,8 +34,8 @@ static gboolean cb_tty(gint fd, GIOCondition cond, gpointer user)
 bool tty_open(TtyInfo *tty, GuiInfo *gui, const char *device)
 {
 	tty->device = device;	/* FIXME: Assume, assume. */
-	tty->fd = open(device, O_RDONLY);
 
+	tty->fd = open(device, O_RDONLY | O_NONBLOCK);
 	if(tty->fd >= 0)
 	{
 		tty->handler = g_unix_fd_add(tty->fd, G_IO_IN, cb_tty, gui->terminal);
