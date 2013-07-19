@@ -8,11 +8,13 @@
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
+#include "actions.h"
+
 typedef struct {
 	GtkWidget	*binary;	/* A GtkFileChooserButton. */
 	VteTerminal	*terminal;
 } GuiInfo;
 
-GtkWidget	* gui_mainwindow_open(GuiInfo *info, const char *title);
+GtkWidget *	gui_mainwindow_open(GuiInfo *info, const Actions *actions, const char *title);
 
 #endif		/* GUI_H_ */
