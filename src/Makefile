@@ -4,7 +4,7 @@
 
 PKGS	= vte-2.90
 
-CFLAGS	= -Wall -ansi -pedantic -std=c99 $(shell pkg-config --cflags $(PKGS))
+CFLAGS	= -Wall -ansi -pedantic -std=c99 -g $(shell pkg-config --cflags $(PKGS))
 
 LDLIBS	= $(shell pkg-config --libs $(PKGS))
 
@@ -14,7 +14,7 @@ ALL	= frdm-mntr
 
 # ----------------------------------------------------------------------
 
-frdm-mntr:	action-upload.o frdm-mntr.o gui.o
+frdm-mntr:	action-upload.o frdm-mntr.o gui.o tty.o
 
 # ----------------------------------------------------------------------
 
