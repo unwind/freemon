@@ -24,6 +24,7 @@ int main(int argc, char *argv[])
 	tty_open(&tty, &gui, "/home/emil/tmp/mntr-pipe");
 	gtk_widget_show_all(mw);
 	gtk_main();
+	tty_close(&tty);
 
 	return EXIT_SUCCESS;
 }
