@@ -17,7 +17,7 @@ static gboolean evt_mainwindow_delete(GtkWidget *wid, const GdkEvent *evt, gpoin
 
 GtkWidget * gui_mainwindow_open(GuiInfo *info, const char *title)
 {
-	GtkWidget	*win, *grid, *label, *chooser;
+	GtkWidget	*win, *grid, *label;
 
 	if(info == NULL)
 		return NULL;
@@ -30,10 +30,10 @@ GtkWidget * gui_mainwindow_open(GuiInfo *info, const char *title)
 	grid = gtk_grid_new();
 	label = gtk_label_new("Binary");
 	gtk_grid_attach(GTK_GRID(grid), label, 0, 0, 1, 1);
-	info->filename = gtk_entry_new();
-	gtk_grid_attach(GTK_GRID(grid), info->filename, 1, 0, 1, 1);
-	chooser = gtk_file_chooser_button_new("Select Binary", GTK_FILE_CHOOSER_ACTION_OPEN);
-	gtk_grid_attach(GTK_GRID(grid), chooser, 2, 0, 1, 1);
+	info->binary = gtk_file_chooser_button_new("Select Binary", GTK_FILE_CHOOSER_ACTION_OPEN);
+	gtk_widget_set_hexpand(info->binary, TRUE);
+	gtk_widget_set_halign(info->binary, GTK_ALIGN_FILL);
+	gtk_grid_attach(GTK_GRID(grid), info->binary, 2, 0, 1, 1);
 
 	gtk_container_add(GTK_CONTAINER(win), grid);
 

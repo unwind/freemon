@@ -9,7 +9,7 @@
 #include <vte/vte.h>
 
 typedef struct {
-	GtkEntry	*filename;
+	GtkWidget	*binary;	/* A GtkFileChooserButton. */
 	VteTerminal	*terminal;
 } GuiInfo;
 
