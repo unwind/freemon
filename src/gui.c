@@ -38,6 +38,9 @@ GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const cha
 	gtk_activatable_set_related_action(GTK_ACTIVATABLE(btn), actions->upload);
 	gtk_grid_attach(GTK_GRID(grid), btn, 2, 0, 1, 1);
 
+	info->terminal = vte_terminal_new();
+	gtk_grid_attach(GTK_GRID(grid), info->terminal, 0, 1, 3, 1);
+
 	gtk_container_add(GTK_CONTAINER(win), grid);
 
 	return win;

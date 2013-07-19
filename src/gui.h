@@ -12,7 +12,7 @@
 
 typedef struct {
 	GtkWidget	*binary;	/* A GtkFileChooserButton. */
-	VteTerminal	*terminal;
+	GtkWidget	*terminal;	/* A VteTerminal. */
 } GuiInfo;
 
 GtkWidget *	gui_mainwindow_open(GuiInfo *info, const Actions *actions, const char *title);
