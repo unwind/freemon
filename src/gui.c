@@ -35,6 +35,7 @@ static void chooser_set_filter(GtkFileChooser *chooser)
 {
 	GtkFileFilter	*filter = gtk_file_filter_new();
 
+	gtk_file_filter_add_pattern(filter, "*.bin");
 	gtk_file_filter_add_pattern(filter, "*.srec");
 	gtk_file_filter_add_pattern(filter, "*.s19");
 
@@ -56,7 +57,7 @@ GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const cha
 	grid = gtk_grid_new();
 	label = gtk_label_new("Binary");
 	gtk_grid_attach(GTK_GRID(grid), label, 0, 0, 1, 1);
-	info->binary = gtk_file_chooser_button_new("Select S-record For Upload", GTK_FILE_CHOOSER_ACTION_OPEN);
+	info->binary = gtk_file_chooser_button_new("Select S-record or Binary for Upload", GTK_FILE_CHOOSER_ACTION_OPEN);
 	chooser_set_filter(GTK_FILE_CHOOSER(info->binary));
 	gtk_widget_set_hexpand(info->binary, TRUE);
 	gtk_widget_set_halign(info->binary, GTK_ALIGN_FILL);
