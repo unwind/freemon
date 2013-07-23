@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 
 	gtk_init(&argc, &argv);
 
-	actions.upload = action_upload_init();
+	actions.upload = action_upload_init(&gui);
 	mw = gui_mainwindow_open(&gui, &actions, "frdm-mntr v" VERSION " by Emil Brink");
 	tty = tty_open(&gui, TTY_TYPE_SERIAL, "/dev/ttyACM0");
 

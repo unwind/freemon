@@ -7,6 +7,8 @@
 
 #include <gtk/gtk.h>
 
-GtkAction *	action_upload_init(void);
+#include "gui.h"
+
+GtkAction *	action_upload_init(GuiInfo *gui);
 
 #endif		/* ACTION_UPLOAD_H_ */

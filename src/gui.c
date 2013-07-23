@@ -53,16 +53,24 @@ GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const cha
 	g_signal_connect(G_OBJECT(win), "delete_event", G_CALLBACK(evt_mainwindow_delete), NULL);
 
 	grid = gtk_grid_new();
-	label = gtk_label_new("Binary");
+	label = gtk_label_new("Binary:");
 	gtk_grid_attach(GTK_GRID(grid), label, 0, 0, 1, 1);
 	info->binary = gtk_file_chooser_button_new("Select S-record or Binary for Upload", GTK_FILE_CHOOSER_ACTION_OPEN);
 	chooser_set_filter(GTK_FILE_CHOOSER(info->binary));
 	gtk_widget_set_hexpand(info->binary, TRUE);
 	gtk_widget_set_halign(info->binary, GTK_ALIGN_FILL);
 	gtk_grid_attach(GTK_GRID(grid), info->binary, 1, 0, 1, 1);
+
+	label = gtk_label_new("Target:");
+	gtk_grid_attach(GTK_GRID(grid), label, 2, 0, 1, 1);
+	info->target = gtk_file_chooser_button_new("Select Target Directory", GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER);
+	gtk_widget_set_hexpand(info->target, TRUE);
+	gtk_widget_set_halign(info->target, GTK_ALIGN_FILL);
+	gtk_grid_attach(GTK_GRID(grid), info->target, 3, 0, 1, 1);
+
 	btn = gtk_button_new();
 	gtk_activatable_set_related_action(GTK_ACTIVATABLE(btn), actions->upload);
-	gtk_grid_attach(GTK_GRID(grid), btn, 2, 0, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), btn, 4, 0, 1, 1);
 
 	info->terminal = vte_terminal_new();
 	gtk_widget_add_events(info->terminal, GDK_KEY_PRESS_MASK);
@@ -74,11 +82,41 @@ GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const cha
 	const glong cw = vte_terminal_get_char_width(VTE_TERMINAL(info->terminal));
 	const glong ch = vte_terminal_get_char_width(VTE_TERMINAL(info->terminal));
 	gtk_widget_set_size_request(scwin, 80 * cw, 25 * ch);
-	gtk_grid_attach(GTK_GRID(grid), scwin, 0, 1, 3, 1);
+	gtk_grid_attach(GTK_GRID(grid), scwin, 0, 1, 5, 1);
 
 	gtk_container_add(GTK_CONTAINER(win), grid);
 
 	return win;
+}
+
+/* ------------------------------------------------------------------- */
+
+static const char * filechooser_get_filename(char *buf, size_t buf_max, GtkWidget *filechooser)
+{
+	gchar	*fn = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(filechooser));
+
+	if(fn != NULL)
+	{
+		const gint req = g_snprintf(buf, buf_max, "%s", fn);
+		g_free(fn);
+
+		return req < buf_max - 1 ? buf : NULL;
+	}
+	return NULL;
+}
+
+const char * gui_get_binary(const GuiInfo *gui)
+{
+	static char	buf[4096];	/* A bit creepy perhaps, but simplifies life for the caller. FIXME: Dig up PATH_MAX. */
+
+	return filechooser_get_filename(buf, sizeof buf, gui->binary);
+}
+
+const char * gui_get_target(const GuiInfo *gui)
+{
+	static char	buf[4096];	/* FIXME: Dig up PATH_MAX. */
+
+	return filechooser_get_filename(buf, sizeof buf, gui->target);
 }
 
 /* ------------------------------------------------------------------- */
