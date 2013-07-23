@@ -13,10 +13,13 @@
 typedef struct {
 	GtkWidget	*binary;	/* A GtkFileChooserButton. */
 	GtkWidget	*terminal;	/* A VteTerminal. */
+	void		(*keyhandler)(guint32 unicode, gpointer user);
+	gpointer	keyhandler_user;
 } GuiInfo;
 
 GtkWidget *	gui_mainwindow_open(GuiInfo *info, const Actions *actions, const char *title);
 
+void		gui_terminal_set_keyhandler(GuiInfo *info, void (*handler)(guint32 unicode, gpointer user), gpointer user);
 void		gui_terminal_insert(GuiInfo *info, const char *text, size_t length);
 
 #endif		/* GUI_H_ */

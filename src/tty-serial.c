@@ -10,6 +10,8 @@
 
 #include <glib-unix.h>
 
+#include <gdk/gdk.h>
+
 #include "tty.h"
 
 /* ------------------------------------------------------------------- */
@@ -69,6 +71,13 @@ static gboolean cb_serial(gint fd, GIOCondition condition, gpointer user)
 	return TRUE;
 }
 
+static void cb_keypress(guint32 unicode, gpointer user)
+{
+	char	out[1] = { unicode & 0xff };
+
+	write(((TtyInfoSerial *) user)->fd, out, 1);
+}
+
 TtyInfo * tty_serial_open(GuiInfo *gui, const char *device)
 {
 	TtyInfoSerial	*serial;
@@ -83,6 +92,7 @@ TtyInfo * tty_serial_open(GuiInfo *gui, const char *device)
 		serial->tty.handle = g_unix_fd_add(serial->fd, G_IO_IN, cb_serial, gui);
 		if(serial->tty.handle != 0)
 		{
+			gui_terminal_set_keyhandler(gui, cb_keypress, serial);
 			printf("added '%s' as input source\n", device);
 			return &serial->tty;	/* Avoids cast. :) */
 		}

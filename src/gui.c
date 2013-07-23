@@ -15,6 +15,22 @@ static gboolean evt_mainwindow_delete(GtkWidget *wid, const GdkEvent *evt, gpoin
 
 /* ------------------------------------------------------------------- */
 
+static gboolean evt_terminal_key_pressed(GtkWidget *wid, GdkEvent *event, gpointer user)
+{
+	GuiInfo	*gui = user;
+
+	if(gui->keyhandler != NULL)
+	{
+		const guint32	unicode = gdk_keyval_to_unicode(((GdkEventKey *) event)->keyval);
+
+		if(unicode != 0)
+		{
+			gui->keyhandler(unicode, gui->keyhandler_user);
+		}
+	}
+	return TRUE;
+}
+
 GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const char *title)
 {
 	GtkWidget	*win, *grid, *btn, *label, *scwin;
@@ -39,6 +55,8 @@ GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const cha
 	gtk_grid_attach(GTK_GRID(grid), btn, 2, 0, 1, 1);
 
 	info->terminal = vte_terminal_new();
+	gtk_widget_add_events(info->terminal, GDK_KEY_PRESS_MASK);
+	g_signal_connect(G_OBJECT(info->terminal), "key-press-event", G_CALLBACK(evt_terminal_key_pressed), info);
 	vte_terminal_set_size(VTE_TERMINAL(info->terminal), 80, 25);
 	gtk_widget_set_vexpand(info->terminal, TRUE);
 	scwin = gtk_scrolled_window_new(NULL, NULL);
@@ -51,6 +69,12 @@ GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const cha
 	gtk_container_add(GTK_CONTAINER(win), grid);
 
 	return win;
+}
+
+void gui_terminal_set_keyhandler(GuiInfo *gui, void (*handler)(guint32 unicode, gpointer user), gpointer user)
+{
+	gui->keyhandler = handler;
+	gui->keyhandler_user = user;
 }
 
 void gui_terminal_insert(GuiInfo *gui, const char *text, size_t length)
