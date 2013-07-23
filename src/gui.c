@@ -13,8 +13,6 @@ static gboolean evt_mainwindow_delete(GtkWidget *wid, const GdkEvent *evt, gpoin
 	return TRUE;
 }
 
-/* ------------------------------------------------------------------- */
-
 static gboolean evt_terminal_key_pressed(GtkWidget *wid, GdkEvent *event, gpointer user)
 {
 	GuiInfo	*gui = user;
@@ -82,6 +80,8 @@ GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const cha
 
 	return win;
 }
+
+/* ------------------------------------------------------------------- */
 
 void gui_terminal_set_keyhandler(GuiInfo *gui, void (*handler)(guint32 unicode, gpointer user), gpointer user)
 {
