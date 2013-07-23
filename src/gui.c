@@ -29,6 +29,11 @@ static gboolean evt_terminal_key_pressed(GtkWidget *wid, GdkEvent *event, gpoint
 	return TRUE;
 }
 
+static void evt_terminal_mapped(GtkWidget *wid, gpointer user)
+{
+	gtk_widget_grab_focus(wid);
+}
+
 static void chooser_set_filter(GtkFileChooser *chooser)
 {
 	GtkFileFilter	*filter = gtk_file_filter_new();
@@ -42,7 +47,7 @@ static void chooser_set_filter(GtkFileChooser *chooser)
 
 GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const char *title)
 {
-	GtkWidget	*win, *grid, *btn, *label, *scwin;
+	GtkWidget	*win, *grid, *btn, *label, *scbar;
 
 	if(info == NULL)
 		return NULL;
@@ -73,16 +78,14 @@ GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const cha
 	gtk_grid_attach(GTK_GRID(grid), btn, 4, 0, 1, 1);
 
 	info->terminal = vte_terminal_new();
+	vte_terminal_set_size(VTE_TERMINAL(info->terminal), 80, 25);
 	gtk_widget_add_events(info->terminal, GDK_KEY_PRESS_MASK);
 	g_signal_connect(G_OBJECT(info->terminal), "key-press-event", G_CALLBACK(evt_terminal_key_pressed), info);
-	vte_terminal_set_size(VTE_TERMINAL(info->terminal), 80, 25);
+	g_signal_connect(G_OBJECT(info->terminal), "map", G_CALLBACK(evt_terminal_mapped), info);
 	gtk_widget_set_vexpand(info->terminal, TRUE);
-	scwin = gtk_scrolled_window_new(NULL, NULL);
-	gtk_container_add(GTK_CONTAINER(scwin), info->terminal);
-	const glong cw = vte_terminal_get_char_width(VTE_TERMINAL(info->terminal));
-	const glong ch = vte_terminal_get_char_width(VTE_TERMINAL(info->terminal));
-	gtk_widget_set_size_request(scwin, 80 * cw, 25 * ch);
-	gtk_grid_attach(GTK_GRID(grid), scwin, 0, 1, 5, 1);
+	gtk_grid_attach(GTK_GRID(grid), info->terminal, 0, 1, 5, 1);
+	scbar = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(info->terminal)));
+	gtk_grid_attach(GTK_GRID(grid), scbar, 5, 1, 1, 1);
 
 	gtk_container_add(GTK_CONTAINER(win), grid);
 
