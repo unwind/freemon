@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 
 	actions.upload = action_upload_init();
 	mw = gui_mainwindow_open(&gui, &actions, "frdm-mntr v" VERSION " by Emil Brink");
-	tty = tty_open(&gui, TTY_TYPE_FIFO, "/home/emil/tmp/mntr-pipe");
+	tty = tty_open(&gui, TTY_TYPE_SERIAL, "/dev/ttyACM0");
 	gtk_widget_show_all(mw);
 	gtk_main();
 	tty_close(tty);
