@@ -31,6 +31,15 @@ static gboolean evt_terminal_key_pressed(GtkWidget *wid, GdkEvent *event, gpoint
 	return TRUE;
 }
 
+static void chooser_set_filter(GtkFileChooser *chooser)
+{
+	GtkFileFilter	*filter = gtk_file_filter_new();
+
+	gtk_file_filter_add_pattern(filter, "*.srec");
+
+	gtk_file_chooser_set_filter(chooser, filter);
+}
+
 GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const char *title)
 {
 	GtkWidget	*win, *grid, *btn, *label, *scwin;
@@ -46,7 +55,8 @@ GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const cha
 	grid = gtk_grid_new();
 	label = gtk_label_new("Binary");
 	gtk_grid_attach(GTK_GRID(grid), label, 0, 0, 1, 1);
-	info->binary = gtk_file_chooser_button_new("Select Binary", GTK_FILE_CHOOSER_ACTION_OPEN);
+	info->binary = gtk_file_chooser_button_new("Select S-Record For Upload", GTK_FILE_CHOOSER_ACTION_OPEN);
+	chooser_set_filter(GTK_FILE_CHOOSER(info->binary));
 	gtk_widget_set_hexpand(info->binary, TRUE);
 	gtk_widget_set_halign(info->binary, GTK_ALIGN_FILL);
 	gtk_grid_attach(GTK_GRID(grid), info->binary, 1, 0, 1, 1);
