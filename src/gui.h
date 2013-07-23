@@ -17,4 +17,6 @@ typedef struct {
 
 GtkWidget *	gui_mainwindow_open(GuiInfo *info, const Actions *actions, const char *title);
 
+void		gui_terminal_insert(GuiInfo *info, const char *text, size_t length);
+
 #endif		/* GUI_H_ */

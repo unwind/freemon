@@ -2,12 +2,6 @@
  * frdm-mntr TTY module.
 */
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-#include <glib-unix.h>
-
 #include "tty.h"
 
 /* ------------------------------------------------------------------- */
@@ -65,6 +59,4 @@ void tty_close(TtyInfo *tty)
 			break;
 		}
 	}
-	g_source_remove(tty->handle);
-	close(tty->fd);
 }

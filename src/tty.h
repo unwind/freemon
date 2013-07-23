@@ -24,6 +24,7 @@ typedef struct {
 	guint		handle;
 } TtyInfo;
 
+#include "tty-fifo.h"
 #include "tty-serial.h"
 
 /* ------------------------------------------------------------------- */
