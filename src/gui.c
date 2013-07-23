@@ -55,5 +55,5 @@ GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const cha
 
 void gui_terminal_insert(GuiInfo *gui, const char *text, size_t length)
 {
-	vte_terminal_feed_child(VTE_TERMINAL(gui->terminal), text, length);
+	vte_terminal_feed(VTE_TERMINAL(gui->terminal), text, length);
 }
