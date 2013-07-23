@@ -3,17 +3,44 @@
 */
 
 #include <stdio.h>
+#include <string.h>
 
 #include "action-upload.h"
 
 /* ------------------------------------------------------------------- */
 
+static gboolean do_copy(const char *src_path, const char *dst_path)
+{
+	GFile	*src = g_file_new_for_path(src_path), *dst = g_file_new_for_path(dst_path);
+
+	const gboolean ok = g_file_copy(src, dst, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, NULL);
+
+	g_object_unref(dst);
+	g_object_unref(src);
+
+	return ok;
+}
+
 static void evt_upload_activate(GtkAction *action, gpointer user)
 {
+	char		tbuf[8192];
 	const char	*binary = gui_get_binary(user);
 	const char	*target = gui_get_target(user);
 
-	printf("upload, upload (%s->%s)\n", binary, target);
+	if(binary == NULL || target == NULL)
+		return;
+
+	/* Construct full target filename, which needs the target appended. */
+	const char	*blast = strrchr(binary, G_DIR_SEPARATOR);
+	if(blast == NULL)
+		blast = binary;
+	else
+		++blast;
+	g_snprintf(tbuf, sizeof tbuf, "%s" G_DIR_SEPARATOR_S "%s", target, blast);
+
+	printf("Uploading %s to %s\n", binary, tbuf);
+	const gboolean ok = do_copy(binary, tbuf);
+	printf(" status: %s\n", ok ? "ok" : "fail");
 }
 
 /* ------------------------------------------------------------------- */
