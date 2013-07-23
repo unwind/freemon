@@ -29,24 +29,42 @@ static gboolean cb_tty(gint fd, GIOCondition cond, gpointer user)
 
 /* ------------------------------------------------------------------- */
 
-bool tty_open(TtyInfo *tty, GuiInfo *gui, const char *device)
+TtyInfo * tty_open(GuiInfo *gui, TtyType type, const char *device)
 {
-	tty->device = device;	/* FIXME: Assume, assume. */
+	TtyInfo	*tty;
 
-	tty->fd = open(device, O_RDONLY | O_NONBLOCK);
-	if(tty->fd >= 0)
+	switch(type)
 	{
-		tty->handle = g_unix_fd_add(tty->fd, G_IO_IN, cb_tty, gui->terminal);
-		printf("added '%s' as input source\n", device);
+	case TTY_TYPE_FIFO:
+		break;
+	case TTY_TYPE_SERIAL:
+		tty = tty_serial_open(gui, device);
+		break;
+	default:
+		return NULL;
 	}
-	else
-		tty->handle = 0;
 
-	return tty->handle != 0;
+	if(tty != NULL)
+	{
+		tty->type = type;
+		tty->device = device;
+	}
+	return tty;
 }
 
 void tty_close(TtyInfo *tty)
 {
+	if(tty != NULL)
+	{
+		switch(tty->type)
+		{
+		case TTY_TYPE_FIFO:
+			break;
+		case TTY_TYPE_SERIAL:
+			tty_serial_close(tty);
+			break;
+		}
+	}
 	g_source_remove(tty->handle);
 	close(tty->fd);
 }

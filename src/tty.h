@@ -12,15 +12,23 @@
 
 /* ------------------------------------------------------------------- */
 
+typedef enum {
+	TTY_TYPE_FIFO = 0,
+	TTY_TYPE_SERIAL,
+} TtyType;
+
+/* Type-dependent structures embed this first. */
 typedef struct {
+	TtyType		type;
 	const gchar	*device;
-	gint		fd;
 	guint		handle;
 } TtyInfo;
 
+#include "tty-serial.h"
+
 /* ------------------------------------------------------------------- */
 
-bool	tty_open(TtyInfo *tty, GuiInfo *gui, const char *device);
-void	tty_close(TtyInfo *tty);
+TtyInfo *	tty_open(GuiInfo *gui, TtyType type, const char *device);
+void		tty_close(TtyInfo *tty);
 
 #endif		/* TTY_H_ */
