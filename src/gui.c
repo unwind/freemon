@@ -13,7 +13,22 @@ static gboolean evt_mainwindow_delete(GtkWidget *wid, const GdkEvent *evt, gpoin
 	return TRUE;
 }
 
-static gboolean evt_terminal_key_pressed(GtkWidget *wid, GdkEvent *event, gpointer user)
+static gboolean evt_terminal_button_press(GtkWidget *wid, GdkEvent *event, gpointer user)
+{
+	const GdkEventButton	*btn = (GdkEventButton *) event;
+
+	if(btn->button == 3)
+	{
+		GuiInfo	*gui = user;
+
+		gtk_menu_popup(GTK_MENU(gui->terminal_menu), NULL, NULL, NULL, NULL, btn->button, btn->time);
+
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean evt_terminal_key_press(GtkWidget *wid, GdkEvent *event, gpointer user)
 {
 	GuiInfo	*gui = user;
 
@@ -32,6 +47,11 @@ static gboolean evt_terminal_key_pressed(GtkWidget *wid, GdkEvent *event, gpoint
 static void evt_terminal_mapped(GtkWidget *wid, gpointer user)
 {
 	gtk_widget_grab_focus(wid);
+}
+
+static void evt_terminal_reset_activate(GtkWidget *wid, gpointer user)
+{
+	vte_terminal_reset(VTE_TERMINAL(((GuiInfo *) user)->terminal), TRUE, TRUE);
 }
 
 static void chooser_set_filter(GtkFileChooser *chooser)
@@ -80,7 +100,8 @@ GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const cha
 	info->terminal = vte_terminal_new();
 	vte_terminal_set_size(VTE_TERMINAL(info->terminal), 80, 25);
 	gtk_widget_add_events(info->terminal, GDK_KEY_PRESS_MASK);
-	g_signal_connect(G_OBJECT(info->terminal), "key-press-event", G_CALLBACK(evt_terminal_key_pressed), info);
+	g_signal_connect(G_OBJECT(info->terminal), "button-press-event", G_CALLBACK(evt_terminal_button_press), info);
+	g_signal_connect(G_OBJECT(info->terminal), "key-press-event", G_CALLBACK(evt_terminal_key_press), info);
 	g_signal_connect(G_OBJECT(info->terminal), "map", G_CALLBACK(evt_terminal_mapped), info);
 	gtk_widget_set_vexpand(info->terminal, TRUE);
 	gtk_grid_attach(GTK_GRID(grid), info->terminal, 0, 1, 5, 1);
@@ -88,6 +109,12 @@ GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const cha
 	gtk_grid_attach(GTK_GRID(grid), scbar, 5, 1, 1, 1);
 
 	gtk_container_add(GTK_CONTAINER(win), grid);
+
+	info->terminal_menu = gtk_menu_new();
+	GtkWidget *item = gtk_menu_item_new_with_label("Reset");
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(evt_terminal_reset_activate), info);
+	gtk_menu_shell_append(GTK_MENU_SHELL(info->terminal_menu), item);
+	gtk_widget_show_all(item);
 
 	return win;
 }

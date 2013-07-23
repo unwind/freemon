@@ -16,6 +16,7 @@ typedef struct {
 	GtkWidget	*terminal;	/* A VteTerminal. */
 	void		(*keyhandler)(guint32 unicode, gpointer user);
 	gpointer	keyhandler_user;
+	GtkWidget	*terminal_menu;	/* A GtkMenu. */
 } GuiInfo;
 
 GtkWidget *	gui_mainwindow_open(GuiInfo *info, const Actions *actions, const char *title);
