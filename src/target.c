@@ -139,10 +139,6 @@ GtkWidget * target_gui_create(Target *target, const Actions *actions)
 		return target->gui;
 
 	target->gui = gtk_grid_new();
-	GtkWidget *label = gtk_label_new("(device)");
-	gtk_grid_attach(GTK_GRID(target->gui), label, 0, 0, 1, 1);
-	label = gtk_label_new(target->upload_path);
-	gtk_grid_attach(GTK_GRID(target->gui), label, 1, 0, 1, 1);
 
 	target->terminal = vte_terminal_new();
 	vte_terminal_set_size(VTE_TERMINAL(target->terminal), 80, 25);
@@ -153,9 +149,9 @@ GtkWidget * target_gui_create(Target *target, const Actions *actions)
 	gtk_widget_set_hexpand(target->terminal, TRUE);
 	gtk_widget_set_vexpand(target->terminal, TRUE);
 	gtk_widget_set_halign(target->terminal, GTK_ALIGN_FILL);
-	gtk_grid_attach(GTK_GRID(target->gui), target->terminal, 0, 1, 5, 1);
+	gtk_grid_attach(GTK_GRID(target->gui), target->terminal, 0, 0, 5, 1);
 	GtkWidget *scbar = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(target->terminal)));
-	gtk_grid_attach(GTK_GRID(target->gui), scbar, 5, 1, 1, 1);
+	gtk_grid_attach(GTK_GRID(target->gui), scbar, 5, 0, 1, 1);
 
 	target->terminal_menu = gtk_menu_new();
 	GtkWidget *item = gtk_menu_item_new_with_label("Reset");
@@ -163,16 +159,16 @@ GtkWidget * target_gui_create(Target *target, const Actions *actions)
 	gtk_menu_shell_append(GTK_MENU_SHELL(target->terminal_menu), item);
 	gtk_widget_show_all(item);
 
-	label = gtk_label_new("Binary:");
-	gtk_grid_attach(GTK_GRID(target->gui), label, 0, 2, 1, 1);
+	GtkWidget *label = gtk_label_new("Binary:");
+	gtk_grid_attach(GTK_GRID(target->gui), label, 0, 1, 1, 1);
 	target->binary = gtk_file_chooser_button_new("Select S-record or Binary for Upload", GTK_FILE_CHOOSER_ACTION_OPEN);
 	chooser_set_filter(GTK_FILE_CHOOSER(target->binary));
 	gtk_widget_set_hexpand(target->binary, TRUE);
 	gtk_widget_set_halign(target->binary, GTK_ALIGN_FILL);
-	gtk_grid_attach(GTK_GRID(target->gui), target->binary, 1, 2, 1, 1);
+	gtk_grid_attach(GTK_GRID(target->gui), target->binary, 1, 1, 1, 1);
 	GtkWidget *btn = gtk_button_new();
 	gtk_activatable_set_related_action(GTK_ACTIVATABLE(btn), action_upload_new(target));
-	gtk_grid_attach(GTK_GRID(target->gui), btn, 2, 2, 1, 1);
+	gtk_grid_attach(GTK_GRID(target->gui), btn, 2, 1, 1, 1);
 
 	return target->gui;
 }
