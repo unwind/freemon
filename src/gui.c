@@ -97,7 +97,7 @@ void gui_target_add(GuiInfo *gui, Target *target)
 	gtk_grid_attach(GTK_GRID(grid), lab, 0, 0, 1, 1);
 	/* Create a close button, using stock image but smaller. Semi-tricky. */
 	GtkWidget *btn = gtk_button_new();
-	GtkWidget *icon = gtk_image_new_from_stock (GTK_STOCK_CLOSE, GTK_ICON_SIZE_SMALL_TOOLBAR);
+	GtkWidget *icon = gtk_image_new_from_stock(GTK_STOCK_CLOSE, GTK_ICON_SIZE_SMALL_TOOLBAR);
 	gtk_button_set_image(GTK_BUTTON(btn), icon);
 	gtk_button_set_always_show_image(GTK_BUTTON(btn), TRUE);
 	g_object_set_data(G_OBJECT(btn), "gui", gui);
