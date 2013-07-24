@@ -67,7 +67,7 @@ static void chooser_set_filter(GtkFileChooser *chooser)
 
 GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const char *title)
 {
-	GtkWidget	*win, *grid, *btn, *label, *scbar;
+	GtkWidget	*win, *btn, *label, *scbar;
 
 	if(info == NULL)
 		return NULL;
@@ -77,8 +77,8 @@ GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const cha
 	gtk_container_set_border_width(GTK_CONTAINER(win), 10);
 	g_signal_connect(G_OBJECT(win), "delete_event", G_CALLBACK(evt_mainwindow_delete), NULL);
 
-	grid = gtk_grid_new();
-	label = gtk_label_new("Binary:");
+	info->grid = gtk_grid_new();
+/*	label = gtk_label_new("Binary:");
 	gtk_grid_attach(GTK_GRID(grid), label, 0, 0, 1, 1);
 	info->binary = gtk_file_chooser_button_new("Select S-record or Binary for Upload", GTK_FILE_CHOOSER_ACTION_OPEN);
 	chooser_set_filter(GTK_FILE_CHOOSER(info->binary));
@@ -107,8 +107,8 @@ GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const cha
 	gtk_grid_attach(GTK_GRID(grid), info->terminal, 0, 1, 5, 1);
 	scbar = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(info->terminal)));
 	gtk_grid_attach(GTK_GRID(grid), scbar, 5, 1, 1, 1);
-
-	gtk_container_add(GTK_CONTAINER(win), grid);
+*/
+	gtk_container_add(GTK_CONTAINER(win), info->grid);
 
 	info->terminal_menu = gtk_menu_new();
 	GtkWidget *item = gtk_menu_item_new_with_label("Reset");
@@ -117,6 +117,16 @@ GtkWidget * gui_mainwindow_open(GuiInfo *info, const Actions *actions, const cha
 	gtk_widget_show_all(item);
 
 	return win;
+}
+
+/* ------------------------------------------------------------------- */
+
+void gui_target_add(GuiInfo *info, Target *target)
+{
+	GtkWidget	*ui = target_gui_create(target);
+
+	gtk_grid_attach(GTK_GRID(info->grid), ui, 0, 0, 1, 1);
+	gtk_widget_show_all(ui);
 }
 
 /* ------------------------------------------------------------------- */
