@@ -14,7 +14,7 @@ ALL	= frdm-mntr
 
 # ----------------------------------------------------------------------
 
-frdm-mntr:	action-upload.o frdm-mntr.o gui.o tty.o tty-fifo.o tty-serial.o
+frdm-mntr:	action-upload.o frdm-mntr.o gui.o target.o tty.o tty-fifo.o tty-serial.o
 
 # ----------------------------------------------------------------------
 
