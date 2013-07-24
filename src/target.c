@@ -115,7 +115,9 @@ GtkWidget * target_gui_create(Target *target)
 	g_signal_connect(G_OBJECT(target->terminal), "button-press-event", G_CALLBACK(evt_terminal_button_press), target);
 	g_signal_connect(G_OBJECT(target->terminal), "key-press-event", G_CALLBACK(evt_terminal_key_press), target);
 	g_signal_connect(G_OBJECT(target->terminal), "map", G_CALLBACK(evt_terminal_map), target);
+	gtk_widget_set_hexpand(target->terminal, TRUE);
 	gtk_widget_set_vexpand(target->terminal, TRUE);
+	gtk_widget_set_halign(target->terminal, GTK_ALIGN_FILL);
 	gtk_grid_attach(GTK_GRID(target->gui), target->terminal, 0, 1, 5, 1);
 	GtkWidget *scbar = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(target->terminal)));
 	gtk_grid_attach(GTK_GRID(target->gui), scbar, 5, 1, 1, 1);

@@ -35,6 +35,7 @@ GtkWidget * gui_mainwindow_open(GuiInfo *gui, const Actions *actions, const char
 
 	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(win), title);
+	gtk_window_set_default_size(GTK_WINDOW(win), 640, 480);
 	gtk_container_set_border_width(GTK_CONTAINER(win), 4);
 	g_signal_connect(G_OBJECT(win), "delete_event", G_CALLBACK(evt_mainwindow_delete), NULL);
 
@@ -42,6 +43,8 @@ GtkWidget * gui_mainwindow_open(GuiInfo *gui, const Actions *actions, const char
 	gui->toolbar = gtk_toolbar_new();
 	GtkWidget *ati = gtk_action_create_tool_item(actions->connect);
 	gtk_toolbar_insert(GTK_TOOLBAR(gui->toolbar), GTK_TOOL_ITEM(ati), 0);
+	gtk_widget_set_hexpand(gui->toolbar, TRUE);
+	gtk_widget_set_halign(gui->toolbar, GTK_ALIGN_FILL);
 	gtk_grid_attach(GTK_GRID(gui->grid), gui->toolbar, 0, 0, 1, 1);
 
 	gui->notebook = gtk_notebook_new();
