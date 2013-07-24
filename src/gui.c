@@ -31,6 +31,8 @@ GtkWidget * gui_mainwindow_open(GuiInfo *gui, const Actions *actions, const char
 	if(gui == NULL)
 		return NULL;
 
+	gui->actions = actions;
+
 	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(win), title);
 	gtk_container_set_border_width(GTK_CONTAINER(win), 4);
@@ -41,6 +43,9 @@ GtkWidget * gui_mainwindow_open(GuiInfo *gui, const Actions *actions, const char
 	GtkWidget *ati = gtk_action_create_tool_item(actions->connect);
 	gtk_toolbar_insert(GTK_TOOLBAR(gui->toolbar), GTK_TOOL_ITEM(ati), 0);
 	gtk_grid_attach(GTK_GRID(gui->grid), gui->toolbar, 0, 0, 1, 1);
+
+	gui->notebook = gtk_notebook_new();
+	gtk_grid_attach(GTK_GRID(gui->grid), gui->notebook, 0, 1, 1, 1);
 
 /*	label = gtk_label_new("Binary:");
 	gtk_grid_attach(GTK_GRID(grid), label, 0, 0, 1, 1);
@@ -79,12 +84,33 @@ GtkWidget * gui_mainwindow_open(GuiInfo *gui, const Actions *actions, const char
 
 /* ------------------------------------------------------------------- */
 
-void gui_target_add(GuiInfo *info, Target *target)
+static void evt_target_close_clicked(GtkWidget *wid, gpointer user)
 {
-	GtkWidget	*ui = target_gui_create(target);
+	GuiInfo	*gui = g_object_get_data(G_OBJECT(wid), "gui");
+	Target	*target = user;
+	const gint num = gtk_notebook_page_num(GTK_NOTEBOOK(gui->notebook), target_gui_create(target));
+	target_destroy(target);
+	gtk_notebook_remove_page(GTK_NOTEBOOK(gui->notebook), num);
+}
 
-	gtk_grid_attach(GTK_GRID(info->grid), ui, 0, 1, 1, 1);
+void gui_target_add(GuiInfo *gui, Target *target)
+{
+	GtkWidget *grid = gtk_grid_new();
+	GtkWidget *lab = gtk_label_new(target_get_name(target));
+	gtk_grid_attach(GTK_GRID(grid), lab, 0, 0, 1, 1);
+	/* Create a close button, using stock image but smaller. Semi-tricky. */
+	GtkWidget *btn = gtk_button_new();
+	GtkWidget *icon = gtk_image_new_from_stock (GTK_STOCK_CLOSE, GTK_ICON_SIZE_SMALL_TOOLBAR);
+	gtk_button_set_image(GTK_BUTTON(btn), icon);
+	gtk_button_set_always_show_image(GTK_BUTTON(btn), TRUE);
+	g_object_set_data(G_OBJECT(btn), "gui", gui);
+	g_signal_connect(G_OBJECT(btn), "clicked", G_CALLBACK(evt_target_close_clicked), target);
+	gtk_grid_attach(GTK_GRID(grid), btn, 1, 0, 1, 1);
+	gtk_widget_show_all(grid);
+
+	GtkWidget *ui = target_gui_create(target);
 	gtk_widget_show_all(ui);
+	gtk_notebook_append_page(GTK_NOTEBOOK(gui->notebook), ui, grid);
 }
 
 /* ------------------------------------------------------------------- */

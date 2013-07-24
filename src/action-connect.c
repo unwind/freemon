@@ -9,29 +9,11 @@
 
 /* ------------------------------------------------------------------- */
 
-#if 0
-static void evt_upload_activate(GtkAction *action, gpointer user)
+static void evt_connect_activate(GtkAction *action, gpointer user)
 {
-	char		tbuf[8192];
-	const char	*binary = gui_get_binary(user);
-	const char	*target = gui_get_target(user);
-
-	if(binary == NULL || target == NULL)
-		return;
-
-	/* Construct full target filename, which needs the target appended. */
-	const char	*blast = strrchr(binary, G_DIR_SEPARATOR);
-	if(blast == NULL)
-		blast = binary;
-	else
-		++blast;
-	g_snprintf(tbuf, sizeof tbuf, "%s" G_DIR_SEPARATOR_S "%s", target, blast);
-
-	printf("Uploading %s to %s\n", binary, tbuf);
-	const gboolean ok = do_copy(binary, tbuf);
-	printf(" status: %s\n", ok ? "ok" : "fail");
+	Target *t = target_new_serial("My FRDM", "/dev/ttyACM0", "/media/emil/FRDM-KL25Z");
+	gui_target_add(user, t);
 }
-#endif
 
 /* ------------------------------------------------------------------- */
 
@@ -40,7 +22,7 @@ GtkAction * action_connect_init(GuiInfo *gui)
 	GtkAction	*upload;
 
 	upload = gtk_action_new("connect", "Connect", "Opens a connection to a FRDM board.", GTK_STOCK_CONNECT);
-	//g_signal_connect(G_OBJECT(upload), "activate", G_CALLBACK(evt_upload_activate), gui);
+	g_signal_connect(G_OBJECT(upload), "activate", G_CALLBACK(evt_connect_activate), gui);
 
 	return upload;
 }

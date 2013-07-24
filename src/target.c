@@ -41,6 +41,19 @@ Target * target_new_serial(const char *name, const char *tty_device, const char 
 	return target;
 }
 
+void target_destroy(Target *target)
+{
+	tty_close(target->tty);
+	g_free(target);
+}
+
+/* ------------------------------------------------------------------- */
+
+const char * target_get_name(const Target *target)
+{
+	return target->name;
+}
+
 /* ------------------------------------------------------------------- */
 
 static void evt_terminal_reset_activate(GtkWidget *wid, gpointer user)
@@ -112,6 +125,9 @@ GtkWidget * target_gui_create(Target *target)
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(evt_terminal_reset_activate), target);
 	gtk_menu_shell_append(GTK_MENU_SHELL(target->terminal_menu), item);
 	gtk_widget_show_all(item);
+
+	label = gtk_label_new("Binary:");
+	gtk_grid_attach(GTK_GRID(target->gui), label, 0, 2, 1, 1);
 
 	return target->gui;
 }

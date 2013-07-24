@@ -12,7 +12,9 @@
 #include "target.h"
 
 typedef struct {
+	const Actions	*actions;
 	GtkWidget	*toolbar;
+	GtkWidget	*notebook;
 
 	GtkWidget	*binary;	/* A GtkFileChooserButton. */
 	GtkWidget	*target;	/* Another GtkFileChooserButton. */
@@ -25,7 +27,7 @@ typedef struct {
 
 GtkWidget *	gui_mainwindow_open(GuiInfo *info, const Actions *actions, const char *title);
 
-void		gui_target_add(GuiInfo *info, Target *target);
+void		gui_target_add(GuiInfo *gui, Target *target);
 
 const char *	gui_get_binary(const GuiInfo *info);
 const char *	gui_get_target(const GuiInfo *info);
