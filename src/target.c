@@ -80,6 +80,11 @@ static gboolean evt_terminal_key_press(GtkWidget *wid, GdkEvent *event, gpointer
 	return FALSE;
 }
 
+static void evt_terminal_map(GtkWidget *wid, gpointer user)
+{
+	gtk_widget_grab_focus(wid);
+}
+
 GtkWidget * target_gui_create(Target *target)
 {
 	if(target->gui != NULL)
@@ -96,8 +101,8 @@ GtkWidget * target_gui_create(Target *target)
 	gtk_widget_add_events(target->terminal, GDK_KEY_PRESS_MASK);
 	g_signal_connect(G_OBJECT(target->terminal), "button-press-event", G_CALLBACK(evt_terminal_button_press), target);
 	g_signal_connect(G_OBJECT(target->terminal), "key-press-event", G_CALLBACK(evt_terminal_key_press), target);
-/*	g_signal_connect(G_OBJECT(target->terminal), "map", G_CALLBACK(evt_terminal_mapped), info);
-*/	gtk_widget_set_vexpand(target->terminal, TRUE);
+	g_signal_connect(G_OBJECT(target->terminal), "map", G_CALLBACK(evt_terminal_map), target);
+	gtk_widget_set_vexpand(target->terminal, TRUE);
 	gtk_grid_attach(GTK_GRID(target->gui), target->terminal, 0, 1, 5, 1);
 	GtkWidget *scbar = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(target->terminal)));
 	gtk_grid_attach(GTK_GRID(target->gui), scbar, 5, 1, 1, 1);

@@ -13,11 +13,6 @@ static gboolean evt_mainwindow_delete(GtkWidget *wid, const GdkEvent *evt, gpoin
 	return TRUE;
 }
 
-static void evt_terminal_mapped(GtkWidget *wid, gpointer user)
-{
-	gtk_widget_grab_focus(wid);
-}
-
 static void chooser_set_filter(GtkFileChooser *chooser)
 {
 	GtkFileFilter	*filter = gtk_file_filter_new();
