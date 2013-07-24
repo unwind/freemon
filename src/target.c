@@ -22,6 +22,8 @@ struct Target {
 
 	void		(*keyhandler)(guint32 unicode, gpointer user);
 	gpointer	keyhandler_user;
+
+	GtkWidget	*binary;	// A GtkFileChooserButton. */
 };
 
 /* ------------------------------------------------------------------- */
@@ -35,7 +37,7 @@ Target * target_new_serial(const char *name, const char *tty_device, const char 
 
 	target->gui = NULL;
 	target->keyhandler = NULL;
-	target->gui = target_gui_create(target);
+	target->gui = NULL;
 	target->tty = tty_open(target, TTY_TYPE_SERIAL, tty_device);
 
 	return target;
@@ -98,7 +100,18 @@ static void evt_terminal_map(GtkWidget *wid, gpointer user)
 	gtk_widget_grab_focus(wid);
 }
 
-GtkWidget * target_gui_create(Target *target)
+static void chooser_set_filter(GtkFileChooser *chooser)
+{
+	GtkFileFilter	*filter = gtk_file_filter_new();
+
+	gtk_file_filter_add_pattern(filter, "*.bin");
+	gtk_file_filter_add_pattern(filter, "*.srec");
+	gtk_file_filter_add_pattern(filter, "*.s19");
+
+	gtk_file_chooser_set_filter(chooser, filter);
+}
+
+GtkWidget * target_gui_create(Target *target, const Actions *actions)
 {
 	if(target->gui != NULL)
 		return target->gui;
@@ -130,6 +143,14 @@ GtkWidget * target_gui_create(Target *target)
 
 	label = gtk_label_new("Binary:");
 	gtk_grid_attach(GTK_GRID(target->gui), label, 0, 2, 1, 1);
+	target->binary = gtk_file_chooser_button_new("Select S-record or Binary for Upload", GTK_FILE_CHOOSER_ACTION_OPEN);
+	chooser_set_filter(GTK_FILE_CHOOSER(target->binary));
+	gtk_widget_set_hexpand(target->binary, TRUE);
+	gtk_widget_set_halign(target->binary, GTK_ALIGN_FILL);
+	gtk_grid_attach(GTK_GRID(target->gui), target->binary, 1, 2, 1, 1);
+	GtkWidget *btn = gtk_button_new();
+	gtk_activatable_set_related_action(GTK_ACTIVATABLE(btn), actions->upload);
+	gtk_grid_attach(GTK_GRID(target->gui), btn, 2, 2, 1, 1);
 
 	return target->gui;
 }

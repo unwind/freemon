@@ -6,22 +6,16 @@
 
 /* ------------------------------------------------------------------- */
 
+const Actions * gui_get_actions(const GuiInfo *gui)
+{
+	return gui->actions;
+}
+
 static gboolean evt_mainwindow_delete(GtkWidget *wid, const GdkEvent *evt, gpointer user)
 {
 	gtk_main_quit();
 
 	return TRUE;
-}
-
-static void chooser_set_filter(GtkFileChooser *chooser)
-{
-	GtkFileFilter	*filter = gtk_file_filter_new();
-
-	gtk_file_filter_add_pattern(filter, "*.bin");
-	gtk_file_filter_add_pattern(filter, "*.srec");
-	gtk_file_filter_add_pattern(filter, "*.s19");
-
-	gtk_file_chooser_set_filter(chooser, filter);
 }
 
 GtkWidget * gui_mainwindow_open(GuiInfo *gui, const Actions *actions, const char *title)
@@ -91,7 +85,7 @@ static void evt_target_close_clicked(GtkWidget *wid, gpointer user)
 {
 	GuiInfo	*gui = g_object_get_data(G_OBJECT(wid), "gui");
 	Target	*target = user;
-	const gint num = gtk_notebook_page_num(GTK_NOTEBOOK(gui->notebook), target_gui_create(target));
+	const gint num = gtk_notebook_page_num(GTK_NOTEBOOK(gui->notebook), target_gui_create(target, NULL));
 	target_destroy(target);
 	gtk_notebook_remove_page(GTK_NOTEBOOK(gui->notebook), num);
 }
@@ -111,7 +105,7 @@ void gui_target_add(GuiInfo *gui, Target *target)
 	gtk_grid_attach(GTK_GRID(grid), btn, 1, 0, 1, 1);
 	gtk_widget_show_all(grid);
 
-	GtkWidget *ui = target_gui_create(target);
+	GtkWidget *ui = target_gui_create(target, gui_get_actions(gui));
 	gtk_widget_show_all(ui);
 	gtk_notebook_append_page(GTK_NOTEBOOK(gui->notebook), ui, grid);
 }

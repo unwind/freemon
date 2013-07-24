@@ -25,6 +25,8 @@ typedef struct {
 	GtkWidget	*terminal_menu;	/* A GtkMenu. */
 } GuiInfo;
 
+const Actions *	gui_get_actions(const GuiInfo *gui);
+
 GtkWidget *	gui_mainwindow_open(GuiInfo *info, const Actions *actions, const char *title);
 
 void		gui_target_add(GuiInfo *gui, Target *target);
