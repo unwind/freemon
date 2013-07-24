@@ -9,7 +9,7 @@
 
 /* ------------------------------------------------------------------- */
 
-TtyInfo *	tty_serial_open(GuiInfo *gui, const char *device);
+TtyInfo *	tty_serial_open(const char *device, Target *target);
 void		tty_serial_close(TtyInfo *tty);
 
 #endif		/* TTY_SERIAL_H_ */

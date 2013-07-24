@@ -13,22 +13,6 @@ static gboolean evt_mainwindow_delete(GtkWidget *wid, const GdkEvent *evt, gpoin
 	return TRUE;
 }
 
-static gboolean evt_terminal_key_press(GtkWidget *wid, GdkEvent *event, gpointer user)
-{
-	GuiInfo	*gui = user;
-
-	if(gui->keyhandler != NULL)
-	{
-		const guint32	unicode = gdk_keyval_to_unicode(((GdkEventKey *) event)->keyval);
-
-		if(unicode != 0)
-		{
-			gui->keyhandler(unicode, gui->keyhandler_user);
-		}
-	}
-	return TRUE;
-}
-
 static void evt_terminal_mapped(GtkWidget *wid, gpointer user)
 {
 	gtk_widget_grab_focus(wid);
@@ -131,17 +115,4 @@ const char * gui_get_target(const GuiInfo *gui)
 	static char	buf[4096];	/* FIXME: Dig up PATH_MAX. */
 
 	return filechooser_get_filename(buf, sizeof buf, gui->target);
-}
-
-/* ------------------------------------------------------------------- */
-
-void gui_terminal_set_keyhandler(GuiInfo *gui, void (*handler)(guint32 unicode, gpointer user), gpointer user)
-{
-	gui->keyhandler = handler;
-	gui->keyhandler_user = user;
-}
-
-void gui_terminal_insert(GuiInfo *gui, const char *text, size_t length)
-{
-	vte_terminal_feed(VTE_TERMINAL(gui->terminal), text, length);
 }

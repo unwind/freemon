@@ -6,24 +6,7 @@
 
 /* ------------------------------------------------------------------- */
 
-static gboolean cb_tty(gint fd, GIOCondition cond, gpointer user)
-{
-	if(cond != G_IO_IN)
-		return FALSE;
-
-	gchar buf[4096];	/* This should be plenty, for the real device. */
-	const ssize_t got = read(fd, buf, sizeof buf);
-	if(got > 0)
-	{
-		printf("got %zd bytes\n", got);
-		vte_terminal_feed(VTE_TERMINAL(user), buf, got);
-	}
-	return TRUE;
-}
-
-/* ------------------------------------------------------------------- */
-
-TtyInfo * tty_open(GuiInfo *gui, TtyType type, const char *device)
+TtyInfo * tty_open(Target *target, TtyType type, const char *device)
 {
 	TtyInfo	*tty;
 
@@ -32,7 +15,7 @@ TtyInfo * tty_open(GuiInfo *gui, TtyType type, const char *device)
 	case TTY_TYPE_FIFO:
 		break;
 	case TTY_TYPE_SERIAL:
-		tty = tty_serial_open(gui, device);
+		tty = tty_serial_open(device, target);
 		break;
 	default:
 		return NULL;

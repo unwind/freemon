@@ -66,7 +66,7 @@ static gboolean cb_serial(gint fd, GIOCondition condition, gpointer user)
 	ssize_t	got = read(fd, buf, sizeof buf);
 	if(got > 0)
 	{
-		gui_terminal_insert(user, buf, got);
+		target_gui_terminal_insert(user, buf, got);
 	}
 	return TRUE;
 }
@@ -78,7 +78,7 @@ static void cb_keypress(guint32 unicode, gpointer user)
 	write(((TtyInfoSerial *) user)->fd, out, 1);
 }
 
-TtyInfo * tty_serial_open(GuiInfo *gui, const char *device)
+TtyInfo * tty_serial_open(const char *device, Target *target)
 {
 	TtyInfoSerial	*serial;
 
@@ -89,11 +89,10 @@ TtyInfo * tty_serial_open(GuiInfo *gui, const char *device)
 		/* Configure serial port. */
 		serial_configure(serial->fd);
 
-		serial->tty.handle = g_unix_fd_add(serial->fd, G_IO_IN, cb_serial, gui);
+		serial->tty.handle = g_unix_fd_add(serial->fd, G_IO_IN, cb_serial, target);
 		if(serial->tty.handle != 0)
 		{
-			gui_terminal_set_keyhandler(gui, cb_keypress, serial);
-			printf("added '%s' as input source\n", device);
+			target_gui_terminal_set_keyhandler(target, cb_keypress, serial);
 			return &serial->tty;	/* Avoids cast. :) */
 		}
 		close(serial->fd);

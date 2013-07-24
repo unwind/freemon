@@ -24,12 +24,12 @@ static gboolean cb_fifo(gint fd, GIOCondition condition, gpointer user)
 	ssize_t	got = read(fd, buf, sizeof buf);
 	if(got > 0)
 	{
-		gui_terminal_insert(user, buf, got);
+		target_gui_terminal_insert(user, buf, got);
 	}
 	return TRUE;
 }
 
-TtyInfo * tty_fifo_open(GuiInfo *gui, const char *device)
+TtyInfo * tty_fifo_open(const char *device, Target *target)
 {
 	TtyInfoFifo	*fifo;
 
@@ -37,7 +37,7 @@ TtyInfo * tty_fifo_open(GuiInfo *gui, const char *device)
 	fifo->fd = open(device, O_RDONLY | O_NONBLOCK);
 	if(fifo->fd >= 0)
 	{
-		fifo->tty.handle = g_unix_fd_add(fifo->fd, G_IO_IN, cb_fifo, gui);
+		fifo->tty.handle = g_unix_fd_add(fifo->fd, G_IO_IN, cb_fifo, target);
 		if(fifo->tty.handle != 0)
 		{
 			printf("added '%s' as input source\n", device);

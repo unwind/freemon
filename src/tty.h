@@ -8,7 +8,7 @@
 #include <stdbool.h>
 #include <glib.h>
 
-#include "gui.h"
+#include "target.h"
 
 /* ------------------------------------------------------------------- */
 
@@ -29,7 +29,7 @@ typedef struct {
 
 /* ------------------------------------------------------------------- */
 
-TtyInfo *	tty_open(GuiInfo *gui, TtyType type, const char *device);
+TtyInfo *	tty_open(Target *target, TtyType type, const char *device);
 void		tty_close(TtyInfo *tty);
 
 #endif		/* TTY_H_ */

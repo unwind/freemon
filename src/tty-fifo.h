@@ -9,7 +9,7 @@
 
 /* ------------------------------------------------------------------- */
 
-TtyInfo *	tty_fifo_open(GuiInfo *gui, const char *device);
+TtyInfo *	tty_fifo_open(const char *device, Target *target);
 void		tty_fifo_close(TtyInfo *tty);
 
 #endif		/* TTY_FIFO_H_ */

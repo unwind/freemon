@@ -28,7 +28,6 @@ void		gui_target_add(GuiInfo *info, Target *target);
 const char *	gui_get_binary(const GuiInfo *info);
 const char *	gui_get_target(const GuiInfo *info);
 
-void		gui_terminal_set_keyhandler(GuiInfo *info, void (*handler)(guint32 unicode, gpointer user), gpointer user);
 void		gui_terminal_insert(GuiInfo *info, const char *text, size_t length);
 
 #endif		/* GUI_H_ */
