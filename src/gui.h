@@ -12,6 +12,8 @@
 #include "target.h"
 
 typedef struct {
+	GtkWidget	*toolbar;
+
 	GtkWidget	*binary;	/* A GtkFileChooserButton. */
 	GtkWidget	*target;	/* Another GtkFileChooserButton. */
 	GtkWidget	*terminal;	/* A VteTerminal. */

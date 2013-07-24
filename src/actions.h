@@ -8,6 +8,7 @@
 #include <gtk/gtk.h>
 
 typedef struct {
+	GtkAction	*connect;
 	GtkAction	*upload;
 } Actions;
 

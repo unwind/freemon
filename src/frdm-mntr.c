@@ -6,6 +6,7 @@
 
 #define	VERSION	"1.0"
 
+#include "action-connect.h"
 #include "action-upload.h"
 #include "gui.h"
 #include "target.h"
@@ -19,6 +20,7 @@ int main(int argc, char *argv[])
 
 	gtk_init(&argc, &argv);
 
+	actions.connect = action_connect_init(&gui);
 	actions.upload = action_upload_init(&gui);
 	mw = gui_mainwindow_open(&gui, &actions, "frdm-mntr v" VERSION " by Emil Brink");
 	Target *t = target_new_serial("My FRDM", "/dev/ttyACM0", "/media/emil/FRDM-KL25Z");
