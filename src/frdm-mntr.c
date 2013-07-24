@@ -21,7 +21,6 @@ int main(int argc, char *argv[])
 	gtk_init(&argc, &argv);
 
 	actions.connect = action_connect_init(&gui);
-	actions.upload = action_upload_init(&gui);
 	mw = gui_mainwindow_open(&gui, &actions, "frdm-mntr v" VERSION " by Emil Brink");
 
 	gtk_widget_show_all(mw);

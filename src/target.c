@@ -5,6 +5,7 @@
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
+#include "action-upload.h"
 #include "tty.h"
 
 #include "target.h"
@@ -54,6 +55,27 @@ void target_destroy(Target *target)
 const char * target_get_name(const Target *target)
 {
 	return target->name;
+}
+
+const char * target_get_binary(const Target *target)
+{
+	if(target->gui == NULL)
+		return NULL;
+
+	gchar *fn = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(target->binary));
+	if(fn != NULL)
+	{
+		static char	buf[4096];	/* A bit creepy perhaps, but simplifies life for the caller. FIXME: Dig up PATH_MAX. */
+		const gint req = g_snprintf(buf, sizeof buf, "%s", fn);
+		g_free(fn);
+		return req < (sizeof buf - 1) ? buf : NULL;
+	}
+	return NULL;
+}
+
+const char * target_get_upload_path(const Target *target)
+{
+	return target->upload_path;
 }
 
 /* ------------------------------------------------------------------- */
@@ -149,7 +171,7 @@ GtkWidget * target_gui_create(Target *target, const Actions *actions)
 	gtk_widget_set_halign(target->binary, GTK_ALIGN_FILL);
 	gtk_grid_attach(GTK_GRID(target->gui), target->binary, 1, 2, 1, 1);
 	GtkWidget *btn = gtk_button_new();
-	gtk_activatable_set_related_action(GTK_ACTIVATABLE(btn), actions->upload);
+	gtk_activatable_set_related_action(GTK_ACTIVATABLE(btn), action_upload_new(target));
 	gtk_grid_attach(GTK_GRID(target->gui), btn, 2, 2, 1, 1);
 
 	return target->gui;

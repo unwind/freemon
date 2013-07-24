@@ -23,11 +23,12 @@ static gboolean do_copy(const char *src_path, const char *dst_path)
 
 static void evt_upload_activate(GtkAction *action, gpointer user)
 {
+	Target	*target = user;
 	char		tbuf[8192];
-	const char	*binary = gui_get_binary(user);
-	const char	*target = gui_get_target(user);
+	const char	*binary = target_get_binary(target);
+	const char	*path = target_get_upload_path(target);
 
-	if(binary == NULL || target == NULL)
+	if(binary == NULL || path == NULL)
 		return;
 
 	/* Construct full target filename, which needs the target appended. */
@@ -36,7 +37,7 @@ static void evt_upload_activate(GtkAction *action, gpointer user)
 		blast = binary;
 	else
 		++blast;
-	g_snprintf(tbuf, sizeof tbuf, "%s" G_DIR_SEPARATOR_S "%s", target, blast);
+	g_snprintf(tbuf, sizeof tbuf, "%s" G_DIR_SEPARATOR_S "%s", path, blast);
 
 	printf("Uploading %s to %s\n", binary, tbuf);
 	const gboolean ok = do_copy(binary, tbuf);
@@ -45,12 +46,12 @@ static void evt_upload_activate(GtkAction *action, gpointer user)
 
 /* ------------------------------------------------------------------- */
 
-GtkAction * action_upload_init(GuiInfo *gui)
+GtkAction * action_upload_new(Target *target)
 {
 	GtkAction	*upload;
 
 	upload = gtk_action_new("upload", "Upload", "Uploads selected binary to the FRDM board.", GTK_STOCK_MEDIA_PLAY);
-	g_signal_connect(G_OBJECT(upload), "activate", G_CALLBACK(evt_upload_activate), gui);
+	g_signal_connect(G_OBJECT(upload), "activate", G_CALLBACK(evt_upload_activate), target);
 
 	return upload;
 }

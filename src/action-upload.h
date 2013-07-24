@@ -9,6 +9,6 @@
 
 #include "gui.h"
 
-GtkAction *	action_upload_init(GuiInfo *gui);
+GtkAction *	action_upload_new(Target *target);
 
 #endif		/* ACTION_UPLOAD_H_ */

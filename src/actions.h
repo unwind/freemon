@@ -9,7 +9,6 @@
 
 typedef struct {
 	GtkAction	*connect;
-	GtkAction	*upload;
 } Actions;
 
 #endif		/* ACTIONS_H_ */
