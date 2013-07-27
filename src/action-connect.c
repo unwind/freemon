@@ -46,7 +46,6 @@ static void evt_connect_activate(GtkAction *action, gpointer user)
 	label = gtk_label_new("Serial Device:");
 	gtk_grid_attach(GTK_GRID(grid), label, 0, 1, 1, 1);
 	info.device = gtk_entry_new();
-	gtk_entry_set_icon_from_stock(GTK_ENTRY(info.device), GTK_ENTRY_ICON_SECONDARY, GTK_STOCK_FIND);
 	gtk_grid_attach(GTK_GRID(grid), info.device, 1, 1, 1, 1);
 
 	label = gtk_label_new("Mounted As:");
