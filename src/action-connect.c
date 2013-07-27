@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "action-connect.h"
+#include "autodetect.h"
 
 /* ------------------------------------------------------------------- */
 
@@ -24,11 +25,6 @@ typedef struct {
 	gui_target_add(user, t);
 */
 
-static void evt_autodetect_clicked(GtkWidget *wid, gpointer user)
-{
-	printf("hello\n");
-}
-
 static void evaluate_entries(const ConnectInfo *info)
 {
 	const bool	device_set = gtk_entry_get_text_length(GTK_ENTRY(info->device)) > 0;
@@ -45,6 +41,11 @@ static void evt_device_changed(GtkWidget *wid, gpointer user)
 static void evt_path_changed(GtkWidget *wid, gpointer user)
 {
 	evaluate_entries(user);
+}
+
+static void evt_autodetect_clicked(GtkWidget *wid, gpointer user)
+{
+	autodetect_simple(NULL, NULL);
 }
 
 static void evt_connect_activate(GtkAction *action, gpointer user)
