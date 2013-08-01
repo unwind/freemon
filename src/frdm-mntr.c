@@ -8,6 +8,7 @@
 
 #include "action-connect.h"
 #include "action-upload.h"
+#include "autodetect.h"
 #include "gui.h"
 #include "target.h"
 #include "tty.h"
@@ -19,6 +20,11 @@ int main(int argc, char *argv[])
 	GtkWidget	*mw;
 
 	gtk_init(&argc, &argv);
+
+	{
+		autodetect_simple(NULL, NULL);
+		exit(0);
+	}
 
 	actions.connect = action_connect_init(&gui);
 	mw = gui_mainwindow_open(&gui, &actions, "frdm-mntr v" VERSION " by Emil Brink");
