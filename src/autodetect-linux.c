@@ -10,21 +10,23 @@
 
 /* ------------------------------------------------------------------- */
 
-typedef enum {
-	CONNECT = 0,
-	ACM,
-	SCSI,
-	SD
-} State;
+typedef struct {
+	char	usb[16];
+	char	serial[16];
+	char	disk[8];
+} DeviceTmp;
 
 typedef struct {
-	State	state;
-	char	usb[16];
 	GRegex	*re_connect;
 	GRegex	*re_acm;
 	GRegex	*re_scsi;
 	GRegex	*re_sd;
 	GRegex	*re_disconnect;
+	char	usb[16];
+	char	scsi[8];
+	char	disk[8];
+	char	serial[16];
+	GList	*devices;	/* List of DeviceTmp. */
 } AutodetectInfo;
 
 /* ------------------------------------------------------------------- */
@@ -46,33 +48,107 @@ static void split_foreach(char *string, bool (*callback)(const char *line, void 
 	}
 }
 
+void devicetmp_append(AutodetectInfo *info)
+{
+	DeviceTmp	*tmp = g_malloc(sizeof *tmp);
+
+	g_strlcpy(tmp->usb, info->usb, sizeof tmp->usb);
+	g_strlcpy(tmp->serial, info->serial, sizeof tmp->serial);
+	g_strlcpy(tmp->disk, info->disk, sizeof tmp->disk);
+
+	info->devices = g_list_append(info->devices, tmp);
+	printf("added '%s', now %u\n", info->usb, g_list_length(info->devices));
+}
+
+void devicetmp_delete(AutodetectInfo *info, const char *usb)
+{
+	GList	*iter;
+
+	for(iter = info->devices; iter != NULL; iter = g_list_next(iter))
+	{
+		DeviceTmp *here = iter->data;
+
+		if(strcmp(here->usb, usb) == 0)
+		{
+			info->devices = g_list_delete_link(info->devices, iter);
+			printf("deleted '%s', now %u\n", usb, g_list_length(info->devices));
+			g_free(here);
+			return;
+		}
+	}
+}
+
 static bool inspect_line(const char *line, void *user)
 {
 	AutodetectInfo	*info = user;
 	GMatchInfo *match = NULL;
 
+	/* Check for disconnect. */
+	if(g_regex_match(info->re_disconnect, line, 0, &match))
+	{
+		gchar *usb = g_match_info_fetch(match, 1);
+
+		printf("disconnect: '%s'\n", usb);
+		devicetmp_delete(info, usb);
+		g_free(usb);
+		g_match_info_free(match);
+
+		return true;
+	}
+
+	/* Not a disconnect, collect info for new device. */
 	if(g_regex_match(info->re_connect, line, 0, &match))
 	{
-		printf("connect: '%s'\n", g_match_info_fetch(match, 1));
+		gchar *usb = g_match_info_fetch(match, 1);
+		printf("connect: '%s'\n", usb);
+		g_strlcpy(info->usb, usb, sizeof info->usb);
+		g_free(usb);
 	}
-	else if(g_regex_match(info->re_scsi, line, 0, &match))
+	else if(info->usb[0] != '\0' && g_regex_match(info->re_acm, line, 0, &match))
 	{
-		printf("scsi: '%s' on '%s'\n", g_match_info_fetch(match, 1), g_match_info_fetch(match, 2));
+		gchar *usb = g_match_info_fetch(match, 1), *serial = g_match_info_fetch(match, 3);
+
+		if(strcmp(usb, info->usb) == 0)
+		{
+			g_strlcpy(info->serial, serial, sizeof info->serial);
+			printf("serial device: '%s'\n", info->serial);
+		}
+		g_free(serial);
+		g_free(usb);
 	}
-	else if(g_regex_match(info->re_sd, line, 0, &match))
+	else if(info->usb[0] != '\0' && g_regex_match(info->re_scsi, line, 0, &match))
 	{
-		printf("sd: '%s' is '%s'\n", g_match_info_fetch(match, 1), g_match_info_fetch(match, 2));
+		gchar *scsi = g_match_info_fetch(match, 1), *usb = g_match_info_fetch(match, 2);
+
+		if(strcmp(usb, info->usb) == 0)
+		{
+			g_strlcpy(info->scsi, scsi, sizeof info->scsi);
+
+			printf("scsi: '%s' on '%s'\n", scsi, usb);
+		}
+		g_free(usb);
+		g_free(scsi);
 	}
-	else if(g_regex_match(info->re_acm, line, 0, &match))
+	if(info->scsi[0] != '\0' && g_regex_match(info->re_sd, line, 0, &match))
 	{
-		printf("serial: '%s' is '%s'\n", g_match_info_fetch(match, 1), g_match_info_fetch(match, 3));
-	}
-	else if(g_regex_match(info->re_disconnect, line, 0, &match))
-	{
-		printf("disconnect: '%s' (device '%s')\n", g_match_info_fetch(match, 1), g_match_info_fetch(match, 2));
+		gchar *scsi = g_match_info_fetch(match, 1), *disk = g_match_info_fetch(match, 2);
+
+		if(strcmp(scsi, info->scsi) == 0)
+		{
+			g_strlcpy(info->disk, disk, sizeof info->disk);
+			printf("scsi disk: '%s'\n", info->disk);
+		}
+		g_free(disk);
+		g_free(scsi);
 	}
 	g_match_info_free(match);
 
+	/* Now figure out if we have all we need. */
+	if(info->usb[0] != '\0' && info->disk[0] != '\0' && info->serial[0] != '\0')
+	{
+		devicetmp_append(info);
+		info->usb[0] = info->scsi[0] = info->disk[0] = info->serial[0] = '\0';
+	}
 	return true;
 }
 
@@ -85,12 +161,15 @@ static GSList * autodetect_all(void)
 		return NULL;
 
 	AutodetectInfo info = {
-		.state = CONNECT,
 		.re_connect = g_regex_new("usb (\\d+-\\d+\\.\\d+): New USB device found, idVendor=1357.+idProduct=(\\d+)", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
 		.re_acm = g_regex_new("cdc_acm (\\d+-\\d+\\.\\d+):(\\d+\\.\\d+):\\s+([A-Za-z0-9]+):\\s+USB ACM device", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
 		.re_scsi = g_regex_new("scsi(\\d+)\\s*:\\s*usb-storage (\\d+-\\d+\\.\\d+)", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
 		.re_sd = g_regex_new("sd (\\d):0:0:0: \\[([a-z]+)\\]\\s+(\\d+) (\\d+)-byte logical blocks", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
 		.re_disconnect = g_regex_new("usb (\\d+-\\d+\\.\\d+): USB disconnect, device number (\\d+)", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
+		.usb = "",
+		.scsi = "",
+		.disk = "",
+		.serial = "",
 	};
 
 	split_foreach(dmesg_out, inspect_line, &info);
