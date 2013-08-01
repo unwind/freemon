@@ -170,6 +170,7 @@ static GSList * autodetect_all(void)
 		.scsi = "",
 		.disk = "",
 		.serial = "",
+		.devices = NULL,
 	};
 
 	split_foreach(dmesg_out, inspect_line, &info);
@@ -181,6 +182,16 @@ static GSList * autodetect_all(void)
 	g_regex_unref(info.re_connect);
 	g_free(dmesg_out);
 
+	/* Any devices found that we need to resolve against mounted filesystems? */
+	if(info.devices != NULL)
+	{
+		gchar	*df_out = NULL;
+		gint	df_status;
+
+		if(!g_spawn_command_line_sync("df --local --portability", &df_out, NULL, &df_status, NULL))
+			return NULL;
+		printf("%s\n", df_out);
+	}
 	return NULL;
 }
 
