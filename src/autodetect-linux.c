@@ -22,6 +22,7 @@ static GSList * autodetect_all(void)
 	GRegex	*re_acm = g_regex_new("cdc_acm (\\d+-\\d+\\.\\d+):(\\d+\\.\\d+):\\s+([A-Za-z0-9]+):\\s+USB ACM device", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL);
 	GRegex	*re_scsi = g_regex_new("scsi(\\d+)\\s*:\\s*usb-storage (\\d+-\\d+\\.\\d+)", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL);
 	GRegex	*re_sd = g_regex_new("sd (\\d):0:0:0: \\[([a-z]+)\\]\\s+(\\d+) (\\d+)-byte logical blocks", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL);
+	GRegex	*re_disconnect = g_regex_new("usb (\\d+-\\d+\\.\\d+): USB disconnect, device number (\\d+)", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL);
 
 	gchar *here = dmesg_out;
 
@@ -54,11 +55,17 @@ static GSList * autodetect_all(void)
 			printf("serial: '%s' is '%s'\n", g_match_info_fetch(vendor_info, 1), g_match_info_fetch(vendor_info, 3));
 			g_match_info_free(vendor_info);
 		}
+		if(g_regex_match(re_disconnect, here, 0, &vendor_info))
+		{
+			printf("disconnect: '%s' (device '%s')\n", g_match_info_fetch(vendor_info, 1), g_match_info_fetch(vendor_info, 2));
+			g_match_info_free(vendor_info);
+		}
 
 		if(eol == NULL)
 			break;
 		here = eol + 1;
 	}
+	g_regex_unref(re_disconnect);
 	g_regex_unref(re_sd);
 	g_regex_unref(re_scsi);
 	g_regex_unref(re_acm);
