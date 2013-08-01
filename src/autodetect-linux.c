@@ -78,7 +78,7 @@ void devicetmp_delete(AutodetectInfo *info, const char *usb)
 	}
 }
 
-static bool inspect_line(const char *line, void *user)
+static bool dmesg_inspect_line(const char *line, void *user)
 {
 	AutodetectInfo	*info = user;
 	GMatchInfo *match = NULL;
@@ -152,6 +152,12 @@ static bool inspect_line(const char *line, void *user)
 	return true;
 }
 
+static bool df_inspect_line(const char *line, void *user)
+{
+	printf("'%s'\n", line);
+	return true;
+}
+
 static GSList * autodetect_all(void)
 {
 	gchar	*dmesg_out = NULL;
@@ -173,7 +179,7 @@ static GSList * autodetect_all(void)
 		.devices = NULL,
 	};
 
-	split_foreach(dmesg_out, inspect_line, &info);
+	split_foreach(dmesg_out, dmesg_inspect_line, &info);
 
 	g_regex_unref(info.re_disconnect);
 	g_regex_unref(info.re_sd);
@@ -190,7 +196,8 @@ static GSList * autodetect_all(void)
 
 		if(!g_spawn_command_line_sync("df --local --portability", &df_out, NULL, &df_status, NULL))
 			return NULL;
-		printf("%s\n", df_out);
+		split_foreach(df_out, df_inspect_line, &info);
+		g_list_free_full(info.devices, g_free);
 	}
 	return NULL;
 }
