@@ -197,7 +197,7 @@ static GSList * autodetect_all(void)
 		return NULL;
 
 	AutodetectInfo info = {
-		.re_connect = g_regex_new("usb (\\d+-\\d+\\.\\d+): New USB device found, idVendor=1357.+idProduct=(\\d+)", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
+		.re_connect = g_regex_new("usb (\\d+-(\\d\\.?)+).*: New USB device found, idVendor=1357.+idProduct=(\\d+)", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
 		.re_acm = g_regex_new("cdc_acm (\\d+-\\d+\\.\\d+):(\\d+\\.\\d+):\\s+([A-Za-z0-9]+):\\s+USB ACM device", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
 		.re_scsi = g_regex_new("scsi(\\d+)\\s*:\\s*usb-storage (\\d+-\\d+\\.\\d+)", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
 		.re_sd = g_regex_new("sd (\\d):0:0:0: \\[([a-z]+)\\]\\s+(\\d+) (\\d+)-byte logical blocks", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
