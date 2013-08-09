@@ -9,8 +9,8 @@
 #include <gtk/gtk.h>
 
 typedef struct {
-	char	device[32];
-	char	path[64];
+	char	device[32];	/* Serial port device (for terminal). */
+	char	path[64];	/* Mountpoint (for upload). */
 } AutodetectedTarget;
 
 bool	autodetect_simple(GString *device, GString *path);

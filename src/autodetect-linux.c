@@ -2,6 +2,7 @@
  * frdm-mntr autodetect module.
 */
 
+#include <ctype.h>
 #include <string.h>
 
 #include <glib.h>
@@ -22,11 +23,14 @@ typedef struct {
 	GRegex	*re_scsi;
 	GRegex	*re_sd;
 	GRegex	*re_disconnect;
+
+	GRegex	*re_mount;
 	char	usb[16];
 	char	scsi[8];
 	char	disk[8];
 	char	serial[16];
-	GList	*devices;	/* List of DeviceTmp. */
+	GList	*tmp_devices;	/* List of DeviceTmp. */
+	GSList	*targets;
 } AutodetectInfo;
 
 /* ------------------------------------------------------------------- */
@@ -56,22 +60,22 @@ void devicetmp_append(AutodetectInfo *info)
 	g_strlcpy(tmp->serial, info->serial, sizeof tmp->serial);
 	g_strlcpy(tmp->disk, info->disk, sizeof tmp->disk);
 
-	info->devices = g_list_append(info->devices, tmp);
-	printf("added '%s', now %u\n", info->usb, g_list_length(info->devices));
+	info->tmp_devices = g_list_append(info->tmp_devices, tmp);
+	printf("added '%s', now %u\n", info->usb, g_list_length(info->tmp_devices));
 }
 
 void devicetmp_delete(AutodetectInfo *info, const char *usb)
 {
 	GList	*iter;
 
-	for(iter = info->devices; iter != NULL; iter = g_list_next(iter))
+	for(iter = info->tmp_devices; iter != NULL; iter = g_list_next(iter))
 	{
 		DeviceTmp *here = iter->data;
 
 		if(strcmp(here->usb, usb) == 0)
 		{
-			info->devices = g_list_delete_link(info->devices, iter);
-			printf("deleted '%s', now %u\n", usb, g_list_length(info->devices));
+			info->tmp_devices = g_list_delete_link(info->tmp_devices, iter);
+			printf("deleted '%s', now %u\n", usb, g_list_length(info->tmp_devices));
 			g_free(here);
 			return;
 		}
@@ -154,7 +158,33 @@ static bool dmesg_inspect_line(const char *line, void *user)
 
 static bool df_inspect_line(const char *line, void *user)
 {
-	printf("'%s'\n", line);
+	AutodetectInfo	*info = user;
+	GList		*iter;
+
+	for(iter = info->tmp_devices; iter != NULL; iter = g_list_next(iter))
+	{
+		DeviceTmp	*tmp = iter->data;
+
+		if(line[0] == '/')	/* Quick check for mountpoint. */
+		{
+			gchar dev[64];
+
+			const gsize len = g_snprintf(dev, sizeof dev, "/dev/%s", tmp->disk);
+			if(strncmp(line, dev, len) == 0 && isspace((unsigned int) line[len]))
+			{
+				/* Found device in mounted device list, extract mountpoint. */
+				const char *sep = strchr(line + len, '/');
+				if(sep != NULL)
+				{
+					/* Allocate and append target descriptor. */
+					AutodetectedTarget *target = g_malloc(sizeof *target);
+					g_strlcpy(target->device, tmp->serial, sizeof target->device);
+					g_strlcpy(target->path, sep, sizeof target->path);
+					info->targets = g_slist_append(info->targets, target);
+				}
+			}
+		}
+	}
 	return true;
 }
 
@@ -176,7 +206,8 @@ static GSList * autodetect_all(void)
 		.scsi = "",
 		.disk = "",
 		.serial = "",
-		.devices = NULL,
+		.tmp_devices = NULL,
+		.targets = NULL,
 	};
 
 	split_foreach(dmesg_out, dmesg_inspect_line, &info);
@@ -189,17 +220,19 @@ static GSList * autodetect_all(void)
 	g_free(dmesg_out);
 
 	/* Any devices found that we need to resolve against mounted filesystems? */
-	if(info.devices != NULL)
+	if(info.tmp_devices != NULL)
 	{
 		gchar	*df_out = NULL;
 		gint	df_status;
 
 		if(!g_spawn_command_line_sync("df --local --portability", &df_out, NULL, &df_status, NULL))
 			return NULL;
+
 		split_foreach(df_out, df_inspect_line, &info);
-		g_list_free_full(info.devices, g_free);
+		g_list_free_full(info.tmp_devices, g_free);
 	}
-	return NULL;
+	printf("found %u targets\n", g_slist_length(info.targets));
+	return info.targets;
 }
 
 bool autodetect_simple(GString *device, GString *path)
