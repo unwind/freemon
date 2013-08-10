@@ -31,9 +31,6 @@ GtkWidget *	gui_mainwindow_open(GuiInfo *info, const Actions *actions, const cha
 
 void		gui_target_add(GuiInfo *gui, Target *target);
 
-const char *	gui_get_binary(const GuiInfo *info);
-const char *	gui_get_target(const GuiInfo *info);
-
 void		gui_terminal_insert(GuiInfo *info, const char *text, size_t length);
 
 #endif		/* GUI_H_ */

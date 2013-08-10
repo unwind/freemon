@@ -109,33 +109,3 @@ void gui_target_add(GuiInfo *gui, Target *target)
 	gtk_widget_show_all(ui);
 	gtk_notebook_append_page(GTK_NOTEBOOK(gui->notebook), ui, grid);
 }
-
-/* ------------------------------------------------------------------- */
-
-static const char * filechooser_get_filename(char *buf, size_t buf_max, GtkWidget *filechooser)
-{
-	gchar	*fn = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(filechooser));
-
-	if(fn != NULL)
-	{
-		const gint req = g_snprintf(buf, buf_max, "%s", fn);
-		g_free(fn);
-
-		return req < buf_max - 1 ? buf : NULL;
-	}
-	return NULL;
-}
-
-const char * gui_get_binary(const GuiInfo *gui)
-{
-	static char	buf[4096];	/* A bit creepy perhaps, but simplifies life for the caller. FIXME: Dig up PATH_MAX. */
-
-	return filechooser_get_filename(buf, sizeof buf, gui->binary);
-}
-
-const char * gui_get_target(const GuiInfo *gui)
-{
-	static char	buf[4096];	/* FIXME: Dig up PATH_MAX. */
-
-	return filechooser_get_filename(buf, sizeof buf, gui->target);
-}
