@@ -45,7 +45,7 @@ static void evt_path_changed(GtkWidget *wid, gpointer user)
 
 static void evt_autodetect_clicked(GtkWidget *wid, gpointer user)
 {
-	autodetect_simple(NULL, NULL);
+//	autodetect_simple(NULL, NULL);
 }
 
 static void evt_connect_activate(GtkAction *action, gpointer user)

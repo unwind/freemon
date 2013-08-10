@@ -13,6 +13,6 @@ typedef struct {
 	char	path[64];	/* Mountpoint (for upload). */
 } AutodetectedTarget;
 
-bool	autodetect_simple(GString *device, GString *path);
+GSList *	autodetect_all(void);
 
 #endif		/* AUTODETECT_H_ */
