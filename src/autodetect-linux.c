@@ -133,7 +133,7 @@ static bool dmesg_inspect_line(const char *line, void *user)
 		g_free(usb);
 		g_free(scsi);
 	}
-	if(info->scsi[0] != '\0' && g_regex_match(info->re_sd, line, 0, &match))
+	else if(info->scsi[0] != '\0' && g_regex_match(info->re_sd, line, 0, &match))
 	{
 		gchar *scsi = g_match_info_fetch(match, 1), *disk = g_match_info_fetch(match, 2);
 
@@ -196,12 +196,14 @@ static GSList * autodetect_all(void)
 	if(!g_spawn_command_line_sync("dmesg", &dmesg_out, NULL, &dmesg_status, NULL))
 		return NULL;
 
+#define	RE_USB	"(\\d+-(?:\\d\\.?)+)"
+
 	AutodetectInfo info = {
-		.re_connect = g_regex_new("usb (\\d+-(\\d\\.?)+).*: New USB device found, idVendor=1357.+idProduct=(\\d+)", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
-		.re_acm = g_regex_new("cdc_acm (\\d+-\\d+\\.\\d+):(\\d+\\.\\d+):\\s+([A-Za-z0-9]+):\\s+USB ACM device", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
-		.re_scsi = g_regex_new("scsi(\\d+)\\s*:\\s*usb-storage (\\d+-\\d+\\.\\d+)", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
-		.re_sd = g_regex_new("sd (\\d):0:0:0: \\[([a-z]+)\\]\\s+(\\d+) (\\d+)-byte logical blocks", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
-		.re_disconnect = g_regex_new("usb (\\d+-\\d+\\.\\d+): USB disconnect, device number (\\d+)", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
+		.re_connect = g_regex_new("usb " RE_USB ".*: new usb device found, idvendor=1357.+idproduct=(\\d+)", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
+		.re_acm = g_regex_new("cdc_acm " RE_USB ":(\\d+\\.\\d+):\\s+([A-Za-z0-9]+):\\s+usb acm device", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
+		.re_scsi = g_regex_new("scsi(\\d+)\\s*:\\s*usb-storage " RE_USB, G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
+		.re_sd = g_regex_new("sd (\\d+):0:0:0: \\[([a-z]+)\\]\\s+(\\d+) (\\d+)-byte logical blocks", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
+		.re_disconnect = g_regex_new("usb " RE_USB ": usb disconnect, device number (\\d+)", G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL),
 		.usb = "",
 		.scsi = "",
 		.disk = "",
