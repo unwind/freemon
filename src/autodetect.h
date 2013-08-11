@@ -15,4 +15,6 @@ typedef struct {
 
 GSList *	autodetect_all(void);
 
+void		autodetect_free(GSList *list);
+
 #endif		/* AUTODETECT_H_ */

@@ -14,6 +14,7 @@
 typedef struct {
 	const Actions	*actions;
 	GtkWidget	*toolbar;
+	GtkToolItem	*targets;
 	GtkWidget	*notebook;
 
 	GtkWidget	*binary;	/* A GtkFileChooserButton. */

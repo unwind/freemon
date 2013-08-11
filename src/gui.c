@@ -2,6 +2,8 @@
  * frdm-mntr GUI module.
 */
 
+#include "autodetect.h"
+
 #include "gui.h"
 
 /* ------------------------------------------------------------------- */
@@ -16,6 +18,33 @@ static gboolean evt_mainwindow_delete(GtkWidget *wid, const GdkEvent *evt, gpoin
 	gtk_main_quit();
 
 	return TRUE;
+}
+
+static void cb_menu_remove_child(GtkWidget *wid, gpointer user)
+{
+	gtk_container_remove(GTK_CONTAINER(user), wid);
+}
+
+static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
+{
+	GuiInfo *gui = user;
+	GtkWidget *menu = gtk_menu_tool_button_get_menu(GTK_MENU_TOOL_BUTTON(gui->targets));
+
+	gtk_container_foreach(GTK_CONTAINER(menu), cb_menu_remove_child, menu);
+	GSList *targets = autodetect_all();
+	if(targets != NULL)
+	{
+		for(GSList *iter = targets; iter != NULL; iter = g_slist_next(iter))
+		{
+			const AutodetectedTarget *at = iter->data;
+			gchar buf[128];
+			g_snprintf(buf, sizeof buf, "%s (on %s)", at->device, at->path);
+			GtkWidget *tmi = gtk_menu_item_new_with_label(buf);
+			gtk_menu_shell_append(GTK_MENU_SHELL(menu), tmi);
+		}
+		gtk_widget_show_all(menu);
+		autodetect_free(targets);
+	}
 }
 
 GtkWidget * gui_mainwindow_open(GuiInfo *gui, const Actions *actions, const char *title)
@@ -35,8 +64,15 @@ GtkWidget * gui_mainwindow_open(GuiInfo *gui, const Actions *actions, const char
 
 	gui->grid = gtk_grid_new();
 	gui->toolbar = gtk_toolbar_new();
-	GtkWidget *ati = gtk_action_create_tool_item(actions->connect);
-	gtk_toolbar_insert(GTK_TOOLBAR(gui->toolbar), GTK_TOOL_ITEM(ati), 0);
+
+	gui->targets = gtk_menu_tool_button_new_from_stock(GTK_STOCK_CONNECT);//(NULL, "Connect");
+	GtkWidget *tmenu = gtk_menu_new();
+	gtk_menu_tool_button_set_menu(GTK_MENU_TOOL_BUTTON(gui->targets), tmenu);
+	gtk_toolbar_insert(GTK_TOOLBAR(gui->toolbar), GTK_TOOL_ITEM(gui->targets), 0);
+	GtkToolItem *btn = gtk_tool_button_new_from_stock(GTK_STOCK_REFRESH);
+	g_signal_connect(G_OBJECT(btn), "clicked", G_CALLBACK(evt_targets_refresh_clicked), gui);
+	gtk_toolbar_insert(GTK_TOOLBAR(gui->toolbar), GTK_TOOL_ITEM(btn), 1);
+
 	gtk_widget_set_hexpand(gui->toolbar, TRUE);
 	gtk_widget_set_halign(gui->toolbar, GTK_ALIGN_FILL);
 	gtk_grid_attach(GTK_GRID(gui->grid), gui->toolbar, 0, 0, 1, 1);
@@ -44,36 +80,6 @@ GtkWidget * gui_mainwindow_open(GuiInfo *gui, const Actions *actions, const char
 	gui->notebook = gtk_notebook_new();
 	gtk_grid_attach(GTK_GRID(gui->grid), gui->notebook, 0, 1, 1, 1);
 
-/*	label = gtk_label_new("Binary:");
-	gtk_grid_attach(GTK_GRID(grid), label, 0, 0, 1, 1);
-	info->binary = gtk_file_chooser_button_new("Select S-record or Binary for Upload", GTK_FILE_CHOOSER_ACTION_OPEN);
-	chooser_set_filter(GTK_FILE_CHOOSER(info->binary));
-	gtk_widget_set_hexpand(info->binary, TRUE);
-	gtk_widget_set_halign(info->binary, GTK_ALIGN_FILL);
-	gtk_grid_attach(GTK_GRID(grid), info->binary, 1, 0, 1, 1);
-
-	label = gtk_label_new("Target:");
-	gtk_grid_attach(GTK_GRID(grid), label, 2, 0, 1, 1);
-	info->target = gtk_file_chooser_button_new("Select Target Directory", GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER);
-	gtk_widget_set_hexpand(info->target, TRUE);
-	gtk_widget_set_halign(info->target, GTK_ALIGN_FILL);
-	gtk_grid_attach(GTK_GRID(grid), info->target, 3, 0, 1, 1);
-
-	btn = gtk_button_new();
-	gtk_activatable_set_related_action(GTK_ACTIVATABLE(btn), actions->upload);
-	gtk_grid_attach(GTK_GRID(grid), btn, 4, 0, 1, 1);
-
-	info->terminal = vte_terminal_new();
-	vte_terminal_set_size(VTE_TERMINAL(info->terminal), 80, 25);
-	gtk_widget_add_events(info->terminal, GDK_KEY_PRESS_MASK);
-	g_signal_connect(G_OBJECT(info->terminal), "button-press-event", G_CALLBACK(evt_terminal_button_press), info);
-	g_signal_connect(G_OBJECT(info->terminal), "key-press-event", G_CALLBACK(evt_terminal_key_press), info);
-	g_signal_connect(G_OBJECT(info->terminal), "map", G_CALLBACK(evt_terminal_mapped), info);
-	gtk_widget_set_vexpand(info->terminal, TRUE);
-	gtk_grid_attach(GTK_GRID(grid), info->terminal, 0, 1, 5, 1);
-	scbar = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(info->terminal)));
-	gtk_grid_attach(GTK_GRID(grid), scbar, 5, 1, 1, 1);
-*/
 	gtk_container_add(GTK_CONTAINER(win), gui->grid);
 
 	return win;
