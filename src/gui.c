@@ -34,6 +34,25 @@ static void evt_target_activate(GtkWidget *item, gpointer user)
 	const char *rsep = strrchr(at->device, '/');
 	Target *t = target_new_serial(rsep != NULL ? rsep + 1 : at->device, at->device, at->path);
 	gui_target_add(user, t);
+	gtk_widget_set_sensitive(item, false);
+}
+
+/* Determine if the given detected target is already connected, i.e. has a tab open. */
+static bool target_connected(const GuiInfo *gui, const AutodetectedTarget *target)
+{
+	GtkWidget *child;
+	for(int i = 0; (child = gtk_notebook_get_nth_page(GTK_NOTEBOOK(gui->notebook), i)) != NULL; ++i)
+	{
+		GtkWidget *grid = gtk_notebook_get_tab_label(GTK_NOTEBOOK(gui->notebook), child);
+		/* Extract actual GtkLabel widget from the grid (for the close button). */
+		GtkWidget *label = gtk_grid_get_child_at(GTK_GRID(grid), 0, 0);
+		const char *ltext = gtk_label_get_text(GTK_LABEL(label));
+		const char *dev = target->device;
+		const char *sep = strrchr(dev, '/');
+		if((sep != NULL && strcmp(sep + 1, ltext) == 0) || strcmp(dev, ltext) == 0)
+			return true;
+	}
+	return false;
 }
 
 static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
@@ -53,6 +72,7 @@ static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
 			GtkWidget *tmi = gtk_menu_item_new_with_label(buf);
 			g_object_set_data(G_OBJECT(tmi), "target", (gpointer) at);
 			g_signal_connect(G_OBJECT(tmi), "activate", G_CALLBACK(evt_target_activate), gui);
+			gtk_widget_set_sensitive(tmi, !target_connected(gui, at));
 			gtk_menu_shell_append(GTK_MENU_SHELL(menu), tmi);
 		}
 		gtk_widget_show_all(menu);
