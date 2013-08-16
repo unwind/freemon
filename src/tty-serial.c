@@ -61,9 +61,8 @@ static bool serial_configure(int fd)
 
 static gboolean cb_serial(gint fd, GIOCondition condition, gpointer user)
 {
-	char	buf[4096];
-
-	ssize_t	got = read(fd, buf, sizeof buf);
+	char buf[4096];
+	const ssize_t got = read(fd, buf, sizeof buf);
 	if(got > 0)
 	{
 		target_gui_terminal_insert(user, buf, got);
