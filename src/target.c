@@ -106,8 +106,13 @@ static gboolean evt_terminal_key_press(GtkWidget *wid, GdkEvent *event, gpointer
 
 	if(target->keyhandler != NULL)
 	{
-		const guint32	unicode = gdk_keyval_to_unicode(((GdkEventKey *) event)->keyval);
+		guint keyval = ((GdkEventKey *) event)->keyval;
 
+		/* Translate troublesome keyvals. */
+		if(keyval == GDK_KEY_KP_Enter)
+			keyval = GDK_KEY_Return;
+		/* Then look up corresponding Unicode, and hand that to the handler. */
+		const guint32 unicode = gdk_keyval_to_unicode(keyval);
 		if(unicode != 0)
 		{
 			target->keyhandler(unicode, target->keyhandler_user);
