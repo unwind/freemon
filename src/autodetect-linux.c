@@ -163,12 +163,10 @@ static bool df_inspect_line(const char *line, void *user)
 
 	for(iter = info->tmp_devices; iter != NULL; iter = g_list_next(iter))
 	{
-		DeviceTmp	*tmp = iter->data;
-
 		if(line[0] == '/')	/* Quick check for mountpoint. */
 		{
+			const DeviceTmp *tmp = iter->data;
 			gchar dev[64];
-
 			const gsize len = g_snprintf(dev, sizeof dev, "/dev/%s", tmp->disk);
 			if(strncmp(line, dev, len) == 0 && isspace((unsigned int) line[len]))
 			{
@@ -178,7 +176,7 @@ static bool df_inspect_line(const char *line, void *user)
 				{
 					/* Allocate and append target descriptor. */
 					AutodetectedTarget *target = g_malloc(sizeof *target);
-					g_strlcpy(target->device, tmp->serial, sizeof target->device);
+					g_snprintf(target->device, sizeof target->device, "/dev/%s", tmp->serial);
 					g_strlcpy(target->path, sep, sizeof target->path);
 					info->targets = g_slist_append(info->targets, target);
 				}

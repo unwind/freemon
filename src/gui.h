@@ -13,6 +13,7 @@
 
 typedef struct {
 	const Actions	*actions;
+	GSList		*available_targets;	/* From autodetect_all(). */
 	GtkWidget	*toolbar;
 	GtkToolItem	*targets;
 	GtkWidget	*notebook;

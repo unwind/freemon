@@ -2,6 +2,8 @@
  * frdm-mntr GUI module.
 */
 
+#include <string.h>
+
 #include "autodetect.h"
 
 #include "gui.h"
@@ -25,6 +27,15 @@ static void cb_menu_remove_child(GtkWidget *wid, gpointer user)
 	gtk_container_remove(GTK_CONTAINER(user), wid);
 }
 
+static void evt_target_activate(GtkWidget *item, gpointer user)
+{
+	const AutodetectedTarget *at = g_object_get_data(G_OBJECT(item), "target");
+
+	const char *rsep = strrchr(at->device, '/');
+	Target *t = target_new_serial(rsep != NULL ? rsep + 1 : at->device, at->device, at->path);
+	gui_target_add(user, t);
+}
+
 static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
 {
 	GuiInfo *gui = user;
@@ -40,10 +51,14 @@ static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
 			gchar buf[128];
 			g_snprintf(buf, sizeof buf, "%s (on %s)", at->device, at->path);
 			GtkWidget *tmi = gtk_menu_item_new_with_label(buf);
+			g_object_set_data(G_OBJECT(tmi), "target", (gpointer) at);
+			g_signal_connect(G_OBJECT(tmi), "activate", G_CALLBACK(evt_target_activate), gui);
 			gtk_menu_shell_append(GTK_MENU_SHELL(menu), tmi);
 		}
 		gtk_widget_show_all(menu);
-		autodetect_free(targets);
+		if(gui->available_targets != NULL)
+			autodetect_free(gui->available_targets);
+		gui->available_targets = targets;
 	}
 }
 
@@ -55,6 +70,7 @@ GtkWidget * gui_mainwindow_open(GuiInfo *gui, const Actions *actions, const char
 		return NULL;
 
 	gui->actions = actions;
+	gui->available_targets = NULL;
 
 	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(win), title);

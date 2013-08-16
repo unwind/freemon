@@ -97,6 +97,8 @@ TtyInfo * tty_serial_open(const char *device, Target *target)
 		}
 		close(serial->fd);
 	}
+	else
+		fprintf(stderr, "frdm-monitor: failed to open serial port '%s'\n", device);
 	g_free(serial);
 
 	return NULL;
