@@ -27,13 +27,17 @@ static void cb_menu_remove_child(GtkWidget *wid, gpointer user)
 	gtk_container_remove(GTK_CONTAINER(user), wid);
 }
 
+static void autodetected_target_connect(const AutodetectedTarget *at, GuiInfo *gui)
+{
+	const char *rsep = strrchr(at->device, '/');
+	Target *t = target_new_serial(rsep != NULL ? rsep + 1 : at->device, at->device, at->path);
+	gui_target_add(gui, t);
+}
+
 static void evt_target_activate(GtkWidget *item, gpointer user)
 {
 	const AutodetectedTarget *at = g_object_get_data(G_OBJECT(item), "target");
-
-	const char *rsep = strrchr(at->device, '/');
-	Target *t = target_new_serial(rsep != NULL ? rsep + 1 : at->device, at->device, at->path);
-	gui_target_add(user, t);
+	autodetected_target_connect(at, user);
 	gtk_widget_set_sensitive(item, false);
 }
 
@@ -53,6 +57,24 @@ static bool target_connected(const GuiInfo *gui, const AutodetectedTarget *targe
 			return true;
 	}
 	return false;
+}
+
+static void evt_targets_clicked(GtkMenuToolButton *btn, gpointer user)
+{
+	GtkWidget *menu = gtk_menu_tool_button_get_menu(btn);
+	GList *items = gtk_container_get_children(GTK_CONTAINER(menu));
+
+	if(items != NULL)
+	{
+		for(GList *iter = items; iter != NULL; iter = g_list_next(iter))
+		{
+			GtkWidget *item = iter->data;
+
+			if(gtk_widget_get_sensitive(item))
+				evt_target_activate(item, user);
+		}
+		g_list_free(items);
+	}
 }
 
 static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
@@ -101,9 +123,10 @@ GtkWidget * gui_mainwindow_open(GuiInfo *gui, const Actions *actions, const char
 	gui->grid = gtk_grid_new();
 	gui->toolbar = gtk_toolbar_new();
 
-	gui->targets = gtk_menu_tool_button_new_from_stock(GTK_STOCK_CONNECT);//(NULL, "Connect");
+	gui->targets = gtk_menu_tool_button_new_from_stock(GTK_STOCK_CONNECT);
 	GtkWidget *tmenu = gtk_menu_new();
 	gtk_menu_tool_button_set_menu(GTK_MENU_TOOL_BUTTON(gui->targets), tmenu);
+	g_signal_connect(G_OBJECT(gui->targets), "clicked", G_CALLBACK(evt_targets_clicked), gui);
 	gtk_toolbar_insert(GTK_TOOLBAR(gui->toolbar), GTK_TOOL_ITEM(gui->targets), 0);
 	GtkToolItem *btn = gtk_tool_button_new_from_stock(GTK_STOCK_REFRESH);
 	g_signal_connect(G_OBJECT(btn), "clicked", G_CALLBACK(evt_targets_refresh_clicked), gui);
