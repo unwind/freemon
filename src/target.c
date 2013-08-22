@@ -57,6 +57,11 @@ const char * target_get_name(const Target *target)
 	return target->name;
 }
 
+const char * target_get_device(const Target *target)
+{
+	return target->tty->device;
+}
+
 const char * target_get_binary(const Target *target)
 {
 	if(target->gui == NULL)

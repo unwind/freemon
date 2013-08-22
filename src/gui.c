@@ -34,13 +34,6 @@ static void autodetected_target_connect(const AutodetectedTarget *at, GuiInfo *g
 	gui_target_add(gui, t);
 }
 
-static void evt_target_activate(GtkWidget *item, gpointer user)
-{
-	const AutodetectedTarget *at = g_object_get_data(G_OBJECT(item), "target");
-	autodetected_target_connect(at, user);
-	gtk_widget_set_sensitive(item, false);
-}
-
 /* Determine if the given detected target is already connected, i.e. has a tab open. */
 static bool target_connected(const GuiInfo *gui, const AutodetectedTarget *target)
 {
@@ -59,6 +52,60 @@ static bool target_connected(const GuiInfo *gui, const AutodetectedTarget *targe
 	return false;
 }
 
+/* Looks up the menu item in the currently available menu of targets that matches the Target, and makes it sensitive. */
+static void target_make_sensitive(GuiInfo *gui, const Target *target)
+{
+	GtkWidget *menu = gtk_menu_tool_button_get_menu(GTK_MENU_TOOL_BUTTON(gui->targets));
+	GList *items = gtk_container_get_children(GTK_CONTAINER(menu));
+
+	for(const GList *iter = items; iter != NULL; iter = g_list_next(iter))
+	{
+		GtkWidget *item = iter->data;
+		const AutodetectedTarget *at = g_object_get_data(G_OBJECT(item), "target");
+		if(strcmp(at->device, target_get_device(target)) == 0)
+		{
+			gtk_widget_set_sensitive(item, TRUE);
+			break;
+		}
+	}
+	g_list_free(items);
+}
+
+static void targets_update_sensitivity(GuiInfo *gui, const GList *items)
+{
+	GList *local_items = NULL;
+
+	if(items == NULL)
+	{
+		GtkWidget *menu = gtk_menu_tool_button_get_menu(GTK_MENU_TOOL_BUTTON(gui->targets));
+		local_items = gtk_container_get_children(GTK_CONTAINER(menu));
+		items = local_items;
+	}
+
+	if(items != NULL)
+	{
+		bool sensitive = false;
+
+		for(const GList *iter = items; iter != NULL; iter = g_list_next(iter))
+		{
+			GtkWidget *item = iter->data;
+			const bool target_sensitive = gtk_widget_get_sensitive(item);
+			sensitive |= target_sensitive;
+		}
+		gtk_widget_set_sensitive(GTK_WIDGET(gui->targets), sensitive);
+	}
+	if(local_items)
+		g_list_free(local_items);
+}
+
+static void evt_target_activate(GtkWidget *item, gpointer user)
+{
+	const AutodetectedTarget *at = g_object_get_data(G_OBJECT(item), "target");
+	autodetected_target_connect(at, user);
+	gtk_widget_set_sensitive(item, false);
+	targets_update_sensitivity(user, NULL);
+}
+
 static void evt_targets_clicked(GtkMenuToolButton *btn, gpointer user)
 {
 	GtkWidget *menu = gtk_menu_tool_button_get_menu(btn);
@@ -71,8 +118,12 @@ static void evt_targets_clicked(GtkMenuToolButton *btn, gpointer user)
 			GtkWidget *item = iter->data;
 
 			if(gtk_widget_get_sensitive(item))
+			{
 				evt_target_activate(item, user);
+				break;
+			}
 		}
+		targets_update_sensitivity(user, items);
 		g_list_free(items);
 	}
 }
@@ -86,7 +137,6 @@ static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
 	GSList *targets = autodetect_all();
 	if(targets != NULL)
 	{
-		bool sensitive = false;
 		for(GSList *iter = targets; iter != NULL; iter = g_slist_next(iter))
 		{
 			const AutodetectedTarget *at = iter->data;
@@ -96,7 +146,6 @@ static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
 			g_object_set_data(G_OBJECT(tmi), "target", (gpointer) at);
 			g_signal_connect(G_OBJECT(tmi), "activate", G_CALLBACK(evt_target_activate), gui);
 			const bool target_sensitive = !target_connected(gui, at);
-			sensitive |= target_sensitive;
 			gtk_widget_set_sensitive(tmi, target_sensitive);
 			gtk_menu_shell_append(GTK_MENU_SHELL(menu), tmi);
 		}
@@ -104,7 +153,7 @@ static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
 		if(gui->available_targets != NULL)
 			autodetect_free(gui->available_targets);
 		gui->available_targets = targets;
-		gtk_widget_set_sensitive(gui->targets, sensitive);
+		targets_update_sensitivity(gui, NULL);
 	}
 }
 
@@ -131,7 +180,7 @@ GtkWidget * gui_mainwindow_open(GuiInfo *gui, const Actions *actions, const char
 	GtkWidget *tmenu = gtk_menu_new();
 	gtk_menu_tool_button_set_menu(GTK_MENU_TOOL_BUTTON(gui->targets), tmenu);
 	g_signal_connect(G_OBJECT(gui->targets), "clicked", G_CALLBACK(evt_targets_clicked), gui);
-	gtk_widget_set_sensitive(gui->targets, FALSE);
+	gtk_widget_set_sensitive(GTK_WIDGET(gui->targets), FALSE);
 	gtk_toolbar_insert(GTK_TOOLBAR(gui->toolbar), GTK_TOOL_ITEM(gui->targets), 0);
 	GtkToolItem *btn = gtk_tool_button_new_from_stock(GTK_STOCK_REFRESH);
 	g_signal_connect(G_OBJECT(btn), "clicked", G_CALLBACK(evt_targets_refresh_clicked), gui);
@@ -156,6 +205,8 @@ static void evt_target_close_clicked(GtkWidget *wid, gpointer user)
 	GuiInfo	*gui = g_object_get_data(G_OBJECT(wid), "gui");
 	Target	*target = user;
 	const gint num = gtk_notebook_page_num(GTK_NOTEBOOK(gui->notebook), target_gui_create(target, NULL));
+	target_make_sensitive(gui, target);
+	targets_update_sensitivity(gui, NULL);
 	target_destroy(target);
 	gtk_notebook_remove_page(GTK_NOTEBOOK(gui->notebook), num);
 }
