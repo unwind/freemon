@@ -86,6 +86,7 @@ static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
 	GSList *targets = autodetect_all();
 	if(targets != NULL)
 	{
+		bool sensitive = false;
 		for(GSList *iter = targets; iter != NULL; iter = g_slist_next(iter))
 		{
 			const AutodetectedTarget *at = iter->data;
@@ -94,13 +95,16 @@ static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
 			GtkWidget *tmi = gtk_menu_item_new_with_label(buf);
 			g_object_set_data(G_OBJECT(tmi), "target", (gpointer) at);
 			g_signal_connect(G_OBJECT(tmi), "activate", G_CALLBACK(evt_target_activate), gui);
-			gtk_widget_set_sensitive(tmi, !target_connected(gui, at));
+			const bool target_sensitive = !target_connected(gui, at);
+			sensitive |= target_sensitive;
+			gtk_widget_set_sensitive(tmi, target_sensitive);
 			gtk_menu_shell_append(GTK_MENU_SHELL(menu), tmi);
 		}
 		gtk_widget_show_all(menu);
 		if(gui->available_targets != NULL)
 			autodetect_free(gui->available_targets);
 		gui->available_targets = targets;
+		gtk_widget_set_sensitive(gui->targets, sensitive);
 	}
 }
 
@@ -127,6 +131,7 @@ GtkWidget * gui_mainwindow_open(GuiInfo *gui, const Actions *actions, const char
 	GtkWidget *tmenu = gtk_menu_new();
 	gtk_menu_tool_button_set_menu(GTK_MENU_TOOL_BUTTON(gui->targets), tmenu);
 	g_signal_connect(G_OBJECT(gui->targets), "clicked", G_CALLBACK(evt_targets_clicked), gui);
+	gtk_widget_set_sensitive(gui->targets, FALSE);
 	gtk_toolbar_insert(GTK_TOOLBAR(gui->toolbar), GTK_TOOL_ITEM(gui->targets), 0);
 	GtkToolItem *btn = gtk_tool_button_new_from_stock(GTK_STOCK_REFRESH);
 	g_signal_connect(G_OBJECT(btn), "clicked", G_CALLBACK(evt_targets_refresh_clicked), gui);
