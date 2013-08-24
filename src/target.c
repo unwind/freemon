@@ -24,7 +24,8 @@ struct Target {
 	void		(*keyhandler)(guint32 unicode, gpointer user);
 	gpointer	keyhandler_user;
 
-	GtkWidget	*binary;	// A GtkFileChooserButton. */
+	GtkWidget	*binary;	// A GtkFileChooserButton.
+	GtkWidget	*binary_info;	// A GtkLabel.
 };
 
 /* ------------------------------------------------------------------- */
@@ -143,6 +144,26 @@ static void chooser_set_filter(GtkFileChooser *chooser)
 	gtk_file_chooser_set_filter(chooser, filter);
 }
 
+static void evt_target_file_set(GtkWidget *wid, gpointer user)
+{
+	const Target *target = user;
+	gchar buf[64] = "--";
+
+	GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(wid));
+	if(file != NULL)
+	{
+		GFileInfo *fi = g_file_query_info(file, G_FILE_ATTRIBUTE_STANDARD_SIZE, G_FILE_QUERY_INFO_NONE, NULL, NULL);
+		if(fi != NULL)
+		{
+			const goffset size = g_file_info_get_size(fi);
+			g_snprintf(buf, sizeof buf, "%.1f KB", size / 1024.0f);
+			g_object_unref(fi);
+		}
+		g_object_unref(file);
+	}
+	gtk_label_set_text(GTK_LABEL(target->binary_info), buf);
+}
+
 GtkWidget * target_gui_create(Target *target, const Actions *actions)
 {
 	if(target->gui != NULL)
@@ -173,12 +194,18 @@ GtkWidget * target_gui_create(Target *target, const Actions *actions)
 	gtk_grid_attach(GTK_GRID(target->gui), label, 0, 1, 1, 1);
 	target->binary = gtk_file_chooser_button_new("Select S-record or Binary for Upload", GTK_FILE_CHOOSER_ACTION_OPEN);
 	chooser_set_filter(GTK_FILE_CHOOSER(target->binary));
+	g_signal_connect(G_OBJECT(target->binary), "file-set", G_CALLBACK(evt_target_file_set), target);
 	gtk_widget_set_hexpand(target->binary, TRUE);
 	gtk_widget_set_halign(target->binary, GTK_ALIGN_FILL);
 	gtk_grid_attach(GTK_GRID(target->gui), target->binary, 1, 1, 1, 1);
+
+	target->binary_info = gtk_label_new("--");
+	gtk_widget_set_margin_right(target->binary_info, 6);
+	gtk_grid_attach(GTK_GRID(target->gui), target->binary_info, 2, 1, 1, 1);
+
 	GtkWidget *btn = gtk_button_new();
 	gtk_activatable_set_related_action(GTK_ACTIVATABLE(btn), action_upload_new(target));
-	gtk_grid_attach(GTK_GRID(target->gui), btn, 2, 1, 1, 1);
+	gtk_grid_attach(GTK_GRID(target->gui), btn, 3, 1, 1, 1);
 
 	return target->gui;
 }
