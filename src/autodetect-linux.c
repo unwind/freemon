@@ -11,6 +11,8 @@
 
 /* ------------------------------------------------------------------- */
 
+#undef	VERBOSE
+
 typedef struct {
 	char	usb[16];
 	char	serial[16];
@@ -61,7 +63,9 @@ void devicetmp_append(AutodetectInfo *info)
 	g_strlcpy(tmp->disk, info->disk, sizeof tmp->disk);
 
 	info->tmp_devices = g_list_append(info->tmp_devices, tmp);
+#if defined VERBOSE
 	printf("added '%s', now %u\n", info->usb, g_list_length(info->tmp_devices));
+#endif
 }
 
 void devicetmp_delete(AutodetectInfo *info, const char *usb)
@@ -75,7 +79,9 @@ void devicetmp_delete(AutodetectInfo *info, const char *usb)
 		if(strcmp(here->usb, usb) == 0)
 		{
 			info->tmp_devices = g_list_delete_link(info->tmp_devices, iter);
+#if defined VERBOSE
 			printf("deleted '%s', now %u\n", usb, g_list_length(info->tmp_devices));
+#endif
 			g_free(here);
 			return;
 		}
@@ -92,7 +98,9 @@ static bool dmesg_inspect_line(const char *line, void *user)
 	{
 		gchar *usb = g_match_info_fetch(match, 1);
 
+#if defined VERBOSE
 		printf("disconnect: '%s'\n", usb);
+#endif
 		devicetmp_delete(info, usb);
 		g_free(usb);
 		g_match_info_free(match);
@@ -104,7 +112,9 @@ static bool dmesg_inspect_line(const char *line, void *user)
 	if(g_regex_match(info->re_connect, line, 0, &match))
 	{
 		gchar *usb = g_match_info_fetch(match, 1);
+#if defined VERBOSE
 		printf("connect: '%s'\n", usb);
+#endif
 		g_strlcpy(info->usb, usb, sizeof info->usb);
 		g_free(usb);
 	}
@@ -115,7 +125,9 @@ static bool dmesg_inspect_line(const char *line, void *user)
 		if(strcmp(usb, info->usb) == 0)
 		{
 			g_strlcpy(info->serial, serial, sizeof info->serial);
+#if defined VERBOSE
 			printf("serial device: '%s'\n", info->serial);
+#endif
 		}
 		g_free(serial);
 		g_free(usb);
@@ -127,8 +139,9 @@ static bool dmesg_inspect_line(const char *line, void *user)
 		if(strcmp(usb, info->usb) == 0)
 		{
 			g_strlcpy(info->scsi, scsi, sizeof info->scsi);
-
+#if defined VERBOSE
 			printf("scsi: '%s' on '%s'\n", scsi, usb);
+#endif
 		}
 		g_free(usb);
 		g_free(scsi);
@@ -140,7 +153,9 @@ static bool dmesg_inspect_line(const char *line, void *user)
 		if(strcmp(scsi, info->scsi) == 0)
 		{
 			g_strlcpy(info->disk, disk, sizeof info->disk);
+#if defined VERBOSE
 			printf("scsi disk: '%s'\n", info->disk);
+#endif
 		}
 		g_free(disk);
 		g_free(scsi);
@@ -231,6 +246,8 @@ GSList * autodetect_all(void)
 		split_foreach(df_out, df_inspect_line, &info);
 		g_list_free_full(info.tmp_devices, g_free);
 	}
+#if defined VERBOSE
 	printf("found %u targets\n", g_slist_length(info.targets));
+#endif
 	return info.targets;
 }
