@@ -28,7 +28,7 @@
 
 static gboolean do_copy(const char *src_path, const char *dst_path)
 {
-	GFile	*src = g_file_new_for_path(src_path), *dst = g_file_new_for_path(dst_path);
+	GFile *src = g_file_new_for_path(src_path), *dst = g_file_new_for_path(dst_path);
 
 	const gboolean ok = g_file_copy(src, dst, G_FILE_COPY_OVERWRITE, NULL, NULL, NULL, NULL);
 
@@ -49,16 +49,15 @@ static void evt_upload_activate(GtkAction *action, gpointer user)
 		return;
 
 	/* Construct full target filename, which needs the target appended. */
-	const char	*blast = strrchr(binary, G_DIR_SEPARATOR);
+	const char *blast = strrchr(binary, G_DIR_SEPARATOR);
 	if(blast == NULL)
 		blast = binary;
 	else
 		++blast;
 	g_snprintf(tbuf, sizeof tbuf, "%s" G_DIR_SEPARATOR_S "%s", path, blast);
 
-	printf("Uploading %s to %s\n", binary, tbuf);
 	const gboolean ok = do_copy(binary, tbuf);
-	printf(" status: %s\n", ok ? "ok" : "fail");
+	// TODO: Actually tracking and reporting any problem might be a good idea, here.
 }
 
 /* ------------------------------------------------------------------- */
