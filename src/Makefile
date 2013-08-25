@@ -8,17 +8,19 @@ CFLAGS	= -Wall -ansi -pedantic -std=c99 -g $(shell pkg-config --cflags $(PKGS))
 
 LDLIBS	= $(shell pkg-config --libs $(PKGS))
 
-ALL	= freemon
+BINARY	= freemon
+
+ALL	= $(BINARY)
 
 .PHONY:	clean
 
 # ----------------------------------------------------------------------
 
-freemon:	action-connect.o action-upload.o autodetect.o freemon.o gui.o target.o tty.o tty-fifo.o tty-serial.o
+freemon:	action-connect.o action-upload.o autodetect.o $(BINARY).o gui.o target.o tty.o tty-fifo.o tty-serial.o
 
 autodetect.o:	autodetect.c autodetect-linux.c
 
 # ----------------------------------------------------------------------
 
 clean:
-	rm -f *.o
+	rm -f *.o $(BINARY)
