@@ -8,13 +8,13 @@ CFLAGS	= -Wall -ansi -pedantic -std=c99 -g $(shell pkg-config --cflags $(PKGS))
 
 LDLIBS	= $(shell pkg-config --libs $(PKGS))
 
-ALL	= frdm-mntr
+ALL	= freemon
 
 .PHONY:	clean
 
 # ----------------------------------------------------------------------
 
-frdm-mntr:	action-connect.o action-upload.o autodetect.o frdm-mntr.o gui.o target.o tty.o tty-fifo.o tty-serial.o
+freemon:	action-connect.o action-upload.o autodetect.o freemon.o gui.o target.o tty.o tty-fifo.o tty-serial.o
 
 autodetect.o:	autodetect.c autodetect-linux.c
 

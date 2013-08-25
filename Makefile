@@ -1,5 +1,5 @@
 #
-# Top-level Makefile for frdm-mntr. Not much to see, here.
+# Top-level Makefile for Freemon. Not much to see, here.
 #
 
 .PHONY: clean install
