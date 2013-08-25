@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 	gtk_init(&argc, &argv);
 
 	actions.connect = action_connect_init(&gui);
-	mw = gui_mainwindow_open(&gui, &actions, "frdm-mntr v" VERSION " by Emil Brink");
+	mw = gui_mainwindow_open(&gui, &actions, "Freemon v" VERSION " by Emil Brink");
 
 	gtk_widget_show_all(mw);
 	gtk_main();
