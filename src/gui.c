@@ -194,10 +194,12 @@ GtkWidget * gui_mainwindow_open(GuiInfo *gui, const Actions *actions, const char
 	gui->toolbar = gtk_toolbar_new();
 
 	GtkToolItem *btn = gtk_tool_button_new_from_stock(GTK_STOCK_REFRESH);
+	gtk_widget_set_tooltip_text(GTK_WIDGET(btn), "Refreshes list of available FRDM-KL25Z boards by auto-detecting.");
 	g_signal_connect(G_OBJECT(btn), "clicked", G_CALLBACK(evt_targets_refresh_clicked), gui);
 	gtk_toolbar_insert(GTK_TOOLBAR(gui->toolbar), GTK_TOOL_ITEM(btn), 0);
 
 	gui->targets = gtk_menu_tool_button_new_from_stock(GTK_STOCK_CONNECT);
+	gtk_widget_set_tooltip_text(GTK_WIDGET(gui->targets), "Connects to the first available board.\nUse the pop-down menu to pick one yourself.");
 	GtkWidget *tmenu = gtk_menu_new();
 	gtk_menu_tool_button_set_menu(GTK_MENU_TOOL_BUTTON(gui->targets), tmenu);
 	g_signal_connect(G_OBJECT(gui->targets), "clicked", G_CALLBACK(evt_targets_clicked), gui);
