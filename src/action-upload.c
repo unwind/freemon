@@ -56,8 +56,7 @@ static void evt_upload_activate(GtkAction *action, gpointer user)
 		++blast;
 	g_snprintf(tbuf, sizeof tbuf, "%s" G_DIR_SEPARATOR_S "%s", path, blast);
 
-	const gboolean ok = do_copy(binary, tbuf);
-	// TODO: Actually tracking and reporting any problem might be a good idea, here.
+	do_copy(binary, tbuf);	// TODO: Actually tracking and reporting any problem might be a good idea, here.
 }
 
 /* ------------------------------------------------------------------- */

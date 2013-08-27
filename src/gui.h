@@ -25,11 +25,9 @@
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
-#include "actions.h"
 #include "target.h"
 
 typedef struct {
-	const Actions	*actions;
 	GSList		*available_targets;	/* From autodetect_all(). */
 	GtkWidget	*toolbar;
 	GtkToolItem	*targets;
@@ -44,9 +42,7 @@ typedef struct {
 	GtkWidget	*terminal_menu;	/* A GtkMenu. */
 } GuiInfo;
 
-const Actions *	gui_get_actions(const GuiInfo *gui);
-
-GtkWidget *	gui_mainwindow_open(GuiInfo *info, const Actions *actions, const char *title);
+GtkWidget *	gui_mainwindow_open(GuiInfo *info, const char *title);
 
 void		gui_target_add(GuiInfo *gui, Target *target);
 

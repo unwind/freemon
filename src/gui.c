@@ -27,11 +27,6 @@
 
 /* ------------------------------------------------------------------- */
 
-const Actions * gui_get_actions(const GuiInfo *gui)
-{
-	return gui->actions;
-}
-
 static gboolean evt_mainwindow_delete(GtkWidget *wid, const GdkEvent *evt, gpointer user)
 {
 	gtk_main_quit();
@@ -174,14 +169,13 @@ static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
 	}
 }
 
-GtkWidget * gui_mainwindow_open(GuiInfo *gui, const Actions *actions, const char *title)
+GtkWidget * gui_mainwindow_open(GuiInfo *gui, const char *title)
 {
 	GtkWidget	*win;
 
 	if(gui == NULL)
 		return NULL;
 
-	gui->actions = actions;
 	gui->available_targets = NULL;
 
 	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -224,7 +218,7 @@ static void evt_target_close_clicked(GtkWidget *wid, gpointer user)
 {
 	GuiInfo	*gui = g_object_get_data(G_OBJECT(wid), "gui");
 	Target	*target = user;
-	const gint num = gtk_notebook_page_num(GTK_NOTEBOOK(gui->notebook), target_gui_create(target, NULL));
+	const gint num = gtk_notebook_page_num(GTK_NOTEBOOK(gui->notebook), target_gui_create(target));
 	target_make_sensitive(gui, target);
 	targets_update_sensitivity(gui, NULL);
 	target_destroy(target);
@@ -246,7 +240,7 @@ void gui_target_add(GuiInfo *gui, Target *target)
 	gtk_grid_attach(GTK_GRID(grid), btn, 1, 0, 1, 1);
 	gtk_widget_show_all(grid);
 
-	GtkWidget *ui = target_gui_create(target, gui_get_actions(gui));
+	GtkWidget *ui = target_gui_create(target);
 	gtk_widget_show_all(ui);
 	gtk_notebook_append_page(GTK_NOTEBOOK(gui->notebook), ui, grid);
 }

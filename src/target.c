@@ -181,7 +181,7 @@ static void evt_target_file_set(GtkWidget *wid, gpointer user)
 	gtk_label_set_text(GTK_LABEL(target->binary_info), buf);
 }
 
-GtkWidget * target_gui_create(Target *target, const Actions *actions)
+GtkWidget * target_gui_create(Target *target)
 {
 	if(target->gui != NULL)
 		return target->gui;
