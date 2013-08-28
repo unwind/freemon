@@ -57,7 +57,7 @@ The window looks like this initially:
 
 ![Initial Main Window](https://github.com/unwind/freemon/raw/master/doc/screenshots/mainwindow-initial.png "Initial Main Window")
 
-Assuming you have at least one FRDM-KL25Z board connected to a USB board, click the Refresh button to run Freemon's auto-detection code.
+Assuming you have at least one FRDM-KL25Z board connected to your computer, click the Refresh button to run Freemon's auto-detection code.
 
 If some boards were found, they will be listed in the menu accessible by clicking the downward arrow next to the Connect button.
 
