@@ -210,7 +210,7 @@ static bool df_inspect_line(const char *line, void *user)
 					AutodetectedTarget *target = g_malloc(sizeof *target);
 					g_snprintf(target->device, sizeof target->device, "/dev/%s", tmp->serial);
 					g_strlcpy(target->path, sep, sizeof target->path);
-					boardid_identify(&target->id, target->path);
+					boardid_set_from_target(&target->id, target->path);
 					info->targets = g_slist_append(info->targets, target);
 				}
 			}

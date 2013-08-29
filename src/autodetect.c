@@ -25,6 +25,15 @@
 #error "Missing autodetect implementation for this platform, sorry!"
 #endif
 
+/* ------------------------------------------------------------------- */
+
+bool autodetect_target_to_string(char *buf, size_t buf_max, const AutodetectedTarget *at)
+{
+	return g_snprintf(buf, buf_max, "%s on %s", at->id.board, at->device) < buf_max;
+}
+
+/* ------------------------------------------------------------------- */
+
 void autodetect_free(GSList *list)
 {
 	for(GSList *iter = list; iter != NULL; iter = g_slist_next(iter))

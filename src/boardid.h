@@ -28,12 +28,16 @@
 /* ------------------------------------------------------------------- */
 
 typedef struct {
+	char		board[16];	/* A name, such as "FRDM-KL25Z". */
 	uint32_t	tuid[4];
 } BoardId;
 
 /* ------------------------------------------------------------------- */
 
-bool	boardid_identify(BoardId *id, const char *path);
+void	boardid_init(BoardId *id);
+bool	boardid_valid(const BoardId *id);
 bool	boardid_equal(const BoardId *id1, const BoardId *id2);
+
+bool	boardid_set_from_target(BoardId *id, const char *path);
 
 #endif		/* BOARDID_H_ */

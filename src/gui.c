@@ -154,6 +154,7 @@ static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
 			const AutodetectedTarget *at = iter->data;
 			gchar buf[128];
 			g_snprintf(buf, sizeof buf, "%s (on %s)", at->device, at->path);
+			autodetect_target_to_string(buf, sizeof buf, at);
 			GtkWidget *tmi = gtk_menu_item_new_with_label(buf);
 			g_object_set_data(G_OBJECT(tmi), "target", (gpointer) at);
 			g_signal_connect(G_OBJECT(tmi), "activate", G_CALLBACK(evt_target_activate), gui);
