@@ -2,9 +2,11 @@
 # The best makefiles are hand-writtten.
 #
 
+DEFS	= -DVERSION=\"1.0\"
+
 PKGS	= vte-2.90
 
-CFLAGS	= -Wall -ansi -pedantic -std=c99 -g $(shell pkg-config --cflags $(PKGS))
+CFLAGS	= -Wall -ansi -pedantic -std=c99 -g $(shell pkg-config --cflags $(PKGS)) $(DEFS)
 
 LDLIBS	= $(shell pkg-config --libs $(PKGS))
 
