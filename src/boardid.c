@@ -30,7 +30,7 @@
 
 void boardid_init(BoardId *id)
 {
-	//memset(id, 0, sizeof *id);
+	memset(id, 0, sizeof *id);
 }
 
 bool boardid_valid(const BoardId *id)
@@ -42,7 +42,11 @@ bool boardid_valid(const BoardId *id)
 
 bool boardid_equal(const BoardId *id1, const BoardId *id2)
 {
-	return memcmp(id1, id2, sizeof *id1) == 0;
+	if(strcmp(id1->board, id2->board) != 0)
+		return false;
+	if(memcmp(id1->tuid, id2->tuid, sizeof id1->tuid) != 0)
+		return false;
+	return true;
 }
 
 /* ------------------------------------------------------------------- */
