@@ -21,8 +21,6 @@
 
 #include <stdlib.h>
 
-#define	VERSION	"1.0"
-
 #include "autodetect.h"
 #include "gui.h"
 #include "target.h"
