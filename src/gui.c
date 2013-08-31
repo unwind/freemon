@@ -21,6 +21,7 @@
 
 #include <string.h>
 
+#include "action-about.h"
 #include "autodetect.h"
 
 #include "gui.h"
@@ -176,6 +177,7 @@ GtkWidget * gui_mainwindow_open(GuiInfo *gui, const char *title)
 	if(gui == NULL)
 		return NULL;
 
+	gui->about = action_about_new();
 	gui->available_targets = NULL;
 
 	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -199,6 +201,13 @@ GtkWidget * gui_mainwindow_open(GuiInfo *gui, const char *title)
 	g_signal_connect(G_OBJECT(gui->targets), "clicked", G_CALLBACK(evt_targets_clicked), gui);
 	gtk_widget_set_sensitive(GTK_WIDGET(gui->targets), FALSE);
 	gtk_toolbar_insert(GTK_TOOLBAR(gui->toolbar), GTK_TOOL_ITEM(gui->targets), 1);
+
+	GtkToolItem *ti = gtk_separator_tool_item_new();
+	gtk_separator_tool_item_set_draw(GTK_SEPARATOR_TOOL_ITEM(ti), FALSE);
+	gtk_tool_item_set_expand(ti, TRUE);
+	gtk_toolbar_insert(GTK_TOOLBAR(gui->toolbar), ti, 2);
+	ti = GTK_TOOL_ITEM(gtk_action_create_tool_item(gui->about));
+	gtk_toolbar_insert(GTK_TOOLBAR(gui->toolbar), ti, 3);
 
 	gtk_widget_set_hexpand(gui->toolbar, TRUE);
 	gtk_widget_set_halign(gui->toolbar, GTK_ALIGN_FILL);

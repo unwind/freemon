@@ -28,6 +28,8 @@
 #include "target.h"
 
 typedef struct {
+	GtkAction	*about;
+
 	GSList		*available_targets;	/* From autodetect_all(). */
 	GtkWidget	*toolbar;
 	GtkToolItem	*targets;
