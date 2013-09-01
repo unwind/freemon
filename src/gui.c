@@ -170,7 +170,7 @@ static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
 	}
 }
 
-GtkWidget * gui_mainwindow_open(GuiInfo *gui, const char *title)
+GtkWidget * gui_init(GuiInfo *gui, const char *title)
 {
 	GtkWidget	*win;
 

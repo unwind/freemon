@@ -25,6 +25,7 @@
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
+#include "config.h"
 #include "target.h"
 
 typedef struct {
@@ -44,7 +45,7 @@ typedef struct {
 	GtkWidget	*terminal_menu;	/* A GtkMenu. */
 } GuiInfo;
 
-GtkWidget *	gui_mainwindow_open(GuiInfo *info, const char *title);
+GtkWidget *	gui_init(GuiInfo *info, const char *title);
 
 void		gui_target_add(GuiInfo *gui, Target *target);
 
