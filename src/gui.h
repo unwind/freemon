@@ -29,6 +29,8 @@
 #include "target.h"
 
 typedef struct {
+	Config		*config;
+
 	GtkAction	*about;
 
 	GSList		*available_targets;	/* From autodetect_all(). */

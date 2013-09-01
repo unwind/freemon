@@ -177,6 +177,8 @@ GtkWidget * gui_init(GuiInfo *gui, const char *title)
 	if(gui == NULL)
 		return NULL;
 
+	gui->config = config_init();
+
 	gui->about = action_about_new();
 	gui->available_targets = NULL;
 

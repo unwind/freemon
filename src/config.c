@@ -19,6 +19,11 @@
  * along with Freemon.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdbool.h>
+#include <stdio.h>
+
+#include <glib.h>
+
 #include "config.h"
 
 /* ------------------------------------------------------------------- */
@@ -39,12 +44,26 @@ typedef struct {
 	Value		value;
 } Setting;
 
+typedef struct BoardConfig
+{
+	Setting	auto_upload;
+	Setting	upload_resets_tty;
+} BoardConfig;
+
 struct Config
 {
+	Setting	refresh_on_startup;
+	GSList	*board_configs;
 };
 
 /* ------------------------------------------------------------------- */
 
 Config * config_init(void)
 {
+	return NULL;
+}
+
+bool config_get_refresh_on_startup(const Config *cfg)
+{
+	return cfg != NULL ? cfg->refresh_on_startup.value.u.boolean : false;
 }
