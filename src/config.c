@@ -40,8 +40,9 @@ typedef struct {
 } Value;
 
 typedef struct {
-	const char	*label;
+	const char	*symbol;
 	Value		value;
+	const char	*label;
 } Setting;
 
 typedef struct BoardConfig
@@ -57,6 +58,27 @@ struct Config
 };
 
 /* ------------------------------------------------------------------- */
+
+static bool get_filename(char *buf, size_t buf_max)
+{
+	const char *prg = "freemon";
+
+	return g_snprintf(buf, buf_max, "%s/%s/%s.conf", g_get_user_config_dir(), prg, prg) < buf_max;
+}
+
+static bool config_load(Config *cfg)
+{
+	char buf[1024];
+
+	if(!get_filename(buf, sizeof buf))
+		return false;
+
+	GKeyFile *kf = g_key_file_new();
+	if(g_key_file_load_from_file(kf, buf, G_KEY_FILE_KEEP_COMMENTS, NULL))
+	{
+	}
+	g_key_file_free(kf);
+}
 
 Config * config_init(void)
 {
