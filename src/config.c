@@ -22,70 +22,99 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#include <glib.h>
+#include <gio/gio.h>
 
 #include "config.h"
 
 /* ------------------------------------------------------------------- */
 
-typedef enum {
-	VALUE_TYPE_BOOLEAN = 0,
-} ValueType;
-
-typedef struct {
-	ValueType	type;
-	union {
-	bool		boolean;
-	}		u;
-} Value;
-
-typedef struct {
-	const char	*symbol;
-	Value		value;
-	const char	*label;
-} Setting;
-
-typedef struct BoardConfig
-{
-	Setting	auto_upload;
-	Setting	upload_resets_tty;
-} BoardConfig;
+#define	GRP_GLOBAL	"global"
 
 struct Config
 {
-	Setting	refresh_on_startup;
-	GSList	*board_configs;
+	GKeyFile	*keyfile;
 };
 
 /* ------------------------------------------------------------------- */
 
-static bool get_filename(char *buf, size_t buf_max)
+static void config_set_defaults(GKeyFile *kf)
+{
+	g_key_file_set_boolean(kf, GRP_GLOBAL, "autodetect-on-startup", FALSE);
+	g_key_file_set_boolean(kf, GRP_GLOBAL, "connect-all-on-first-autodetect", FALSE);
+}
+
+static bool get_filename(bool with_file, char *buf, size_t buf_max)
 {
 	const char *prg = "freemon";
 
+	/* FIXME(emil): Come on, refactor this! */
+	if(!with_file)
+		return g_snprintf(buf, buf_max, "%s/%s", g_get_user_config_dir(), prg);
 	return g_snprintf(buf, buf_max, "%s/%s/%s.conf", g_get_user_config_dir(), prg, prg) < buf_max;
 }
 
-static bool config_load(Config *cfg)
+static GKeyFile * config_load(void)
 {
-	char buf[1024];
+	char filename[1024];
 
-	if(!get_filename(buf, sizeof buf))
+	if(!get_filename(true, filename, sizeof filename))
 		return false;
 
+	printf("loading config from '%s'\n", filename);
 	GKeyFile *kf = g_key_file_new();
-	if(g_key_file_load_from_file(kf, buf, G_KEY_FILE_KEEP_COMMENTS, NULL))
+
+	if(g_key_file_load_from_file(kf, filename, G_KEY_FILE_KEEP_COMMENTS, NULL))
 	{
+		printf("load OK\n");
 	}
-	g_key_file_free(kf);
+	else
+	{
+		g_key_file_free(kf);
+		kf = NULL;
+	}
+	return kf;
+}
+
+static bool config_save(const Config *cfg)
+{
+	char filename[1024];
+	if(!get_filename(true, filename, sizeof filename))
+		return false;
+
+	bool ok = false;
+	gsize length;
+	gchar *data = g_key_file_to_data(cfg->keyfile, &length, NULL);
+	if(data != NULL)
+	{
+		char dirname[1024];
+
+		if(get_filename(false, dirname, sizeof dirname))
+			g_mkdir_with_parents(dirname, 0755);
+
+		GFile *file = g_file_new_for_path(filename);
+		GError *error = NULL;
+		ok = g_file_replace_contents(file, data, length, NULL, FALSE, G_FILE_CREATE_NONE, NULL, NULL, &error);
+		g_object_unref(G_OBJECT(file));
+	}
+	g_free(data);
+
+	return ok;
 }
 
 Config * config_init(void)
 {
-	return NULL;
+	Config *cfg = g_malloc(sizeof *cfg);
+
+	if((cfg->keyfile = config_load()) == NULL)
+	{
+		cfg->keyfile = g_key_file_new();
+		config_set_defaults(cfg->keyfile);
+		config_save(cfg);
+	}
+	return cfg;
 }
 
 bool config_get_refresh_on_startup(const Config *cfg)
 {
-	return cfg != NULL ? cfg->refresh_on_startup.value.u.boolean : false;
+	return false;
 }
