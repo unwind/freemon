@@ -30,6 +30,25 @@
 
 #define	GRP_GLOBAL	"global"
 
+typedef enum {
+	SIMPLETYPE_BOOLEAN,
+	SIMPLETYPE_INTEGER,
+	SIMPLETYPE_STRING,
+} SimpleType;
+
+typedef union {
+	bool boolean;
+	int integer;
+	const char *string;
+} SimpleValue;
+
+typedef struct {
+	SimpleType	type;
+	SimpleValue	value;
+	const char	*key;
+	const char	*comment;
+} SettingTemplate;
+
 struct Config
 {
 	GKeyFile	*keyfile;
@@ -37,10 +56,39 @@ struct Config
 
 /* ------------------------------------------------------------------- */
 
+static void config_set_from_templates(GKeyFile *kf, const char *group, const char *group_comment, const SettingTemplate *templates, size_t num_templates)
+{
+	for(size_t i = 0; i < num_templates; ++i)
+	{
+		const SettingTemplate *here = templates + i;
+		switch(here->type)
+		{
+			case SIMPLETYPE_BOOLEAN:
+				g_key_file_set_boolean(kf, group, here->key, here->value.boolean);
+				break;
+			case SIMPLETYPE_INTEGER:
+				g_key_file_set_integer(kf, group, here->key, here->value.integer);
+				break;
+			case SIMPLETYPE_STRING:
+				g_key_file_set_string(kf, group, here->key, here->value.string);
+				break;
+		}
+		if(here->comment != NULL)
+			g_key_file_set_comment(kf, group, here->key, here->comment, NULL);
+	}
+	g_key_file_set_comment(kf, group, NULL, group_comment, NULL);
+}
+
 static void config_set_defaults(GKeyFile *kf)
 {
-	g_key_file_set_boolean(kf, GRP_GLOBAL, "autodetect-on-startup", FALSE);
-	g_key_file_set_boolean(kf, GRP_GLOBAL, "connect-all-on-first-autodetect", FALSE);
+	static const SettingTemplate globals[] = {
+	{ SIMPLETYPE_BOOLEAN, .value.boolean = false, "autodetect-on-startup", "Automatically detect plugged-in boards on startup?" },
+	{ SIMPLETYPE_BOOLEAN, .value.boolean = false, "connect-all-on-first-autodetect", "Connect to all plugged-in boards the first time autodetect is run?" },
+	};
+
+	g_key_file_set_comment(kf, NULL, NULL, "Note: Key comments are used as GUI labels.", NULL);
+
+	config_set_from_templates(kf, GRP_GLOBAL, "Global settings", globals, sizeof globals / sizeof *globals);
 }
 
 static bool get_filename(bool with_file, char *buf, size_t buf_max)
@@ -60,15 +108,11 @@ static GKeyFile * config_load(void)
 	if(!get_filename(true, filename, sizeof filename))
 		return false;
 
-	printf("loading config from '%s'\n", filename);
 	GKeyFile *kf = g_key_file_new();
 
-	if(g_key_file_load_from_file(kf, filename, G_KEY_FILE_KEEP_COMMENTS, NULL))
+	if(!g_key_file_load_from_file(kf, filename, G_KEY_FILE_KEEP_COMMENTS, NULL))
 	{
-		printf("load OK\n");
-	}
-	else
-	{
+		/* Load failed, free the empty key file. */
 		g_key_file_free(kf);
 		kf = NULL;
 	}
@@ -108,6 +152,8 @@ Config * config_init(void)
 	if((cfg->keyfile = config_load()) == NULL)
 	{
 		cfg->keyfile = g_key_file_new();
+
+		/* After creating a new default config, save it. */
 		config_set_defaults(cfg->keyfile);
 		config_save(cfg);
 	}
