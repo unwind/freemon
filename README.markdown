@@ -38,8 +38,8 @@ And, perhaps just as importantly, here's what it is *not*:
 #Installation#
 <a id="install"></a>
 At the moment, Freemon is not available in any pre-packaged form, so you need to build it yourself.
-It requires on the [VteTerminal](https://developer.gnome.org/vte/unstable/VteTerminal.html) library, so you're going to need that first.
-In Ubuntu, you can install it by doing `sudo apt-get install libvte-2.90-dev` in a shell.
+It requires the [VteTerminal](https://developer.gnome.org/vte/unstable/VteTerminal.html) library, so you're going to need that first.
+In Ubuntu, you can install it by running `sudo apt-get install libvte-2.90-dev` in a shell.
 Make sure you get the GTK+ 3.x version of VteTerminal, since Freemon uses GTK+ 3.x.
 
 Then do the following to build Freemon:
