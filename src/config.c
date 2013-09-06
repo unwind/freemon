@@ -56,7 +56,7 @@ struct Config
 
 /* ------------------------------------------------------------------- */
 
-static void config_set_from_templates(GKeyFile *kf, const char *group, const char *group_comment, const SettingTemplate *templates, size_t num_templates)
+static void keyfile_set_from_templates(GKeyFile *kf, const char *group, const char *group_comment, const SettingTemplate *templates, size_t num_templates)
 {
 	for(size_t i = 0; i < num_templates; ++i)
 	{
@@ -79,7 +79,7 @@ static void config_set_from_templates(GKeyFile *kf, const char *group, const cha
 	g_key_file_set_comment(kf, group, NULL, group_comment, NULL);
 }
 
-static void config_set_defaults(GKeyFile *kf)
+static void keyfile_set_defaults(GKeyFile *kf)
 {
 	static const SettingTemplate globals[] = {
 	{ SIMPLETYPE_BOOLEAN, .value.boolean = false, "autodetect-on-startup", "Automatically detect plugged-in boards on startup?" },
@@ -88,7 +88,7 @@ static void config_set_defaults(GKeyFile *kf)
 
 	g_key_file_set_comment(kf, NULL, NULL, "Note: Key comments are used as GUI labels.", NULL);
 
-	config_set_from_templates(kf, GRP_GLOBAL, "Global settings", globals, sizeof globals / sizeof *globals);
+	keyfile_set_from_templates(kf, GRP_GLOBAL, "Global settings", globals, sizeof globals / sizeof *globals);
 }
 
 static bool get_filename(bool with_file, char *buf, size_t buf_max)
@@ -101,7 +101,7 @@ static bool get_filename(bool with_file, char *buf, size_t buf_max)
 	return g_snprintf(buf, buf_max, "%s/%s/%s.conf", g_get_user_config_dir(), prg, prg) < buf_max;
 }
 
-static GKeyFile * config_load(void)
+static GKeyFile * config_keyfile_load(void)
 {
 	char filename[1024];
 
@@ -119,7 +119,7 @@ static GKeyFile * config_load(void)
 	return kf;
 }
 
-static bool config_save(const Config *cfg)
+static bool config_keyfile_save(const Config *cfg)
 {
 	char filename[1024];
 	if(!get_filename(true, filename, sizeof filename))
@@ -149,13 +149,13 @@ Config * config_init(void)
 {
 	Config *cfg = g_malloc(sizeof *cfg);
 
-	if((cfg->keyfile = config_load()) == NULL)
+	if((cfg->keyfile = config_keyfile_load()) == NULL)
 	{
 		cfg->keyfile = g_key_file_new();
 
 		/* After creating a new default config, save it. */
-		config_set_defaults(cfg->keyfile);
-		config_save(cfg);
+		keyfile_set_defaults(cfg->keyfile);
+		config_keyfile_save(cfg);
 	}
 	return cfg;
 }
