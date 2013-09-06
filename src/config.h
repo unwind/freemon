@@ -24,6 +24,10 @@
 
 typedef struct Config	Config;
 
-Config	*config_init(void);
+Config *	config_init(void);
+
+Config *	config_copy(const Config *old);
+
+Config *	config_edit(const Config *old);
 
 #endif		/* CONFIG_H_ */

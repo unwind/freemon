@@ -49,15 +49,25 @@ typedef struct {
 	const char	*comment;
 } SettingTemplate;
 
+static const SettingTemplate global_settings[] = {
+	{ SIMPLETYPE_BOOLEAN, .value.boolean = false, "autodetect-on-startup", "Automatically detect plugged-in boards on startup?" },
+	{ SIMPLETYPE_BOOLEAN, .value.boolean = false, "connect-all-on-first-autodetect", "Connect to all plugged-in boards the first time autodetect is run?" },
+};
+
+/* ------------------------------------------------------------------- */
+
 struct Config
 {
+	GHashTable	*meta;		/* Maps setting keys back to SettingTemplates, for meta info. */
 	GKeyFile	*keyfile;
 };
 
 /* ------------------------------------------------------------------- */
 
-static void keyfile_set_from_templates(GKeyFile *kf, const char *group, const char *group_comment, const SettingTemplate *templates, size_t num_templates)
+static void config_keyfile_add_from_templates(Config *cfg, const char *group, const char *group_comment, const SettingTemplate *templates, size_t num_templates)
 {
+	GKeyFile *kf = cfg->keyfile;
+
 	for(size_t i = 0; i < num_templates; ++i)
 	{
 		const SettingTemplate *here = templates + i;
@@ -73,22 +83,14 @@ static void keyfile_set_from_templates(GKeyFile *kf, const char *group, const ch
 				g_key_file_set_string(kf, group, here->key, here->value.string);
 				break;
 		}
-		if(here->comment != NULL)
-			g_key_file_set_comment(kf, group, here->key, here->comment, NULL);
+		g_hash_table_insert(cfg->meta, (gpointer) here->key, (gpointer) here);
 	}
 	g_key_file_set_comment(kf, group, NULL, group_comment, NULL);
 }
 
-static void keyfile_set_defaults(GKeyFile *kf)
+static void config_keyfile_set_defaults(Config *cfg)
 {
-	static const SettingTemplate globals[] = {
-	{ SIMPLETYPE_BOOLEAN, .value.boolean = false, "autodetect-on-startup", "Automatically detect plugged-in boards on startup?" },
-	{ SIMPLETYPE_BOOLEAN, .value.boolean = false, "connect-all-on-first-autodetect", "Connect to all plugged-in boards the first time autodetect is run?" },
-	};
-
-	g_key_file_set_comment(kf, NULL, NULL, "Note: Key comments are used as GUI labels.", NULL);
-
-	keyfile_set_from_templates(kf, GRP_GLOBAL, "Global settings", globals, sizeof globals / sizeof *globals);
+	config_keyfile_add_from_templates(cfg, GRP_GLOBAL, "Global settings", global_settings, sizeof global_settings / sizeof *global_settings);
 }
 
 static bool get_filename(bool with_file, char *buf, size_t buf_max)
@@ -145,22 +147,41 @@ static bool config_keyfile_save(const Config *cfg)
 	return ok;
 }
 
-Config * config_init(void)
+static Config * config_new(void)
 {
 	Config *cfg = g_malloc(sizeof *cfg);
 
+	cfg->meta = g_hash_table_new(g_str_hash, g_str_equal);
+	cfg->keyfile = NULL;
+
+	return cfg;
+}
+
+Config * config_init(void)
+{
+	Config *cfg = config_new();
 	if((cfg->keyfile = config_keyfile_load()) == NULL)
 	{
 		cfg->keyfile = g_key_file_new();
 
 		/* After creating a new default config, save it. */
-		keyfile_set_defaults(cfg->keyfile);
+		config_keyfile_set_defaults(cfg);
 		config_keyfile_save(cfg);
 	}
 	return cfg;
 }
 
-bool config_get_refresh_on_startup(const Config *cfg)
+/* ------------------------------------------------------------------- */
+
+Config * config_copy(const Config *cfg)
 {
-	return false;
+	if(cfg == NULL)
+		return NULL;
+
+	Config *copy = config_new();
+	copy->keyfile = g_key_file_new();
+
+	/* TODO: There might be something missing, here. */
+
+	return copy;
 }
