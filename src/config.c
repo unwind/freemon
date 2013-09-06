@@ -101,11 +101,12 @@ static void config_keyfile_set_defaults(Config *cfg)
 static bool get_filename(bool with_file, char *buf, size_t buf_max)
 {
 	const char *prg = "freemon";
+	const gchar *dir = g_get_user_config_dir();
 
 	/* FIXME(emil): Come on, refactor this! */
 	if(!with_file)
-		return g_snprintf(buf, buf_max, "%s/%s", g_get_user_config_dir(), prg);
-	return g_snprintf(buf, buf_max, "%s/%s/%s.conf", g_get_user_config_dir(), prg, prg) < buf_max;
+		return g_snprintf(buf, buf_max, "%s/%s", dir, prg);
+	return g_snprintf(buf, buf_max, "%s/%s/%s.conf", dir, prg, prg) < buf_max;
 }
 
 static GKeyFile * config_keyfile_load(void)
