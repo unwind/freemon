@@ -31,6 +31,7 @@
 #define	GRP_GLOBAL	"global"
 
 typedef enum {
+	SIMPLETYPE_GROUP,	/* This is not an actual setting, it's used as a grouping meta thingie. */
 	SIMPLETYPE_BOOLEAN,
 	SIMPLETYPE_INTEGER,
 	SIMPLETYPE_STRING,
@@ -50,6 +51,7 @@ typedef struct {
 } SettingTemplate;
 
 static const SettingTemplate global_settings[] = {
+	{ SIMPLETYPE_GROUP, .key = GRP_GLOBAL },
 	{ SIMPLETYPE_BOOLEAN, .value.boolean = false, "autodetect-on-startup", "Automatically detect plugged-in boards on startup?" },
 	{ SIMPLETYPE_BOOLEAN, .value.boolean = false, "connect-all-on-first-autodetect", "Connect to all plugged-in boards the first time autodetect is run?" },
 };
@@ -64,15 +66,19 @@ struct Config
 
 /* ------------------------------------------------------------------- */
 
-static void config_keyfile_add_from_templates(Config *cfg, const char *group, const char *group_comment, const SettingTemplate *templates, size_t num_templates)
+static void config_keyfile_add_from_templates(Config *cfg, const SettingTemplate *templates, size_t num_templates)
 {
 	GKeyFile *kf = cfg->keyfile;
+	const char *group = NULL;
 
 	for(size_t i = 0; i < num_templates; ++i)
 	{
 		const SettingTemplate *here = templates + i;
 		switch(here->type)
 		{
+			case SIMPLETYPE_GROUP:
+				group = here->key;
+				continue;	/* Avoid hashing the group. */
 			case SIMPLETYPE_BOOLEAN:
 				g_key_file_set_boolean(kf, group, here->key, here->value.boolean);
 				break;
@@ -85,12 +91,11 @@ static void config_keyfile_add_from_templates(Config *cfg, const char *group, co
 		}
 		g_hash_table_insert(cfg->meta, (gpointer) here->key, (gpointer) here);
 	}
-	g_key_file_set_comment(kf, group, NULL, group_comment, NULL);
 }
 
 static void config_keyfile_set_defaults(Config *cfg)
 {
-	config_keyfile_add_from_templates(cfg, GRP_GLOBAL, "Global settings", global_settings, sizeof global_settings / sizeof *global_settings);
+	config_keyfile_add_from_templates(cfg, global_settings, sizeof global_settings / sizeof *global_settings);
 }
 
 static bool get_filename(bool with_file, char *buf, size_t buf_max)
