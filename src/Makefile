@@ -18,7 +18,7 @@ ALL	= $(BINARY)
 
 # ----------------------------------------------------------------------
 
-freemon:	action-about.o action-upload.o autodetect.o config.o $(BINARY).o gui.o target.o tty.o tty-fifo.o tty-serial.o
+freemon:	action-about.o action-config.o action-upload.o autodetect.o config.o $(BINARY).o gui.o target.o tty.o tty-fifo.o tty-serial.o
 
 autodetect.o:	autodetect.c autodetect-linux.c
 

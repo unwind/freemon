@@ -1,5 +1,5 @@
 /*
- * Freemon: persistent configuration module.
+ * Freemon: config window action module.
  *
  * Copyright 2013 Emil Brink <emil@obsession.se>.
  * 
@@ -19,15 +19,25 @@
  * along with Freemon.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#if !defined CONFIG_H_
-#define	CONFIG_H_
+#include "action-config.h"
+#include "config.h"
+#include "gui.h"
 
-typedef struct Config	Config;
+/* ------------------------------------------------------------------- */
 
-Config *	config_init(void);
+static void evt_config_activate(GtkAction *action, gpointer user)
+{
+	const Config *old = gui_get_config(user);
+	Config *new_cfg = config_edit(old, NULL);
+}
 
-Config *	config_copy(const Config *old);
+/* ------------------------------------------------------------------- */
 
-Config *	config_edit(const Config *cfg, GtkWindow *parent);
+GtkAction * action_config_new(GuiInfo *gui)
+{
+	GtkAction *config = gtk_action_new("preferences", "Preferences", "Edits program preferences.", GTK_STOCK_PREFERENCES);
 
-#endif		/* CONFIG_H_ */
+	g_signal_connect(G_OBJECT(config), "activate", G_CALLBACK(evt_config_activate), gui);
+
+	return config;
+}

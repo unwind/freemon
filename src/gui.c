@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "action-about.h"
+#include "action-config.h"
 #include "autodetect.h"
 
 #include "gui.h"
@@ -179,7 +180,8 @@ GtkWidget * gui_init(GuiInfo *gui, const char *title)
 
 	gui->config = config_init();
 
-	gui->about = action_about_new();
+	gui->action_about = action_about_new();
+	gui->action_config = action_config_new(gui);
 	gui->available_targets = NULL;
 
 	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -208,8 +210,10 @@ GtkWidget * gui_init(GuiInfo *gui, const char *title)
 	gtk_separator_tool_item_set_draw(GTK_SEPARATOR_TOOL_ITEM(ti), FALSE);
 	gtk_tool_item_set_expand(ti, TRUE);
 	gtk_toolbar_insert(GTK_TOOLBAR(gui->toolbar), ti, 2);
-	ti = GTK_TOOL_ITEM(gtk_action_create_tool_item(gui->about));
+	ti = GTK_TOOL_ITEM(gtk_action_create_tool_item(gui->action_config));
 	gtk_toolbar_insert(GTK_TOOLBAR(gui->toolbar), ti, 3);
+	ti = GTK_TOOL_ITEM(gtk_action_create_tool_item(gui->action_about));
+	gtk_toolbar_insert(GTK_TOOLBAR(gui->toolbar), ti, 4);
 
 	gtk_widget_set_hexpand(gui->toolbar, TRUE);
 	gtk_widget_set_halign(gui->toolbar, GTK_ALIGN_FILL);
@@ -221,6 +225,11 @@ GtkWidget * gui_init(GuiInfo *gui, const char *title)
 	gtk_container_add(GTK_CONTAINER(win), gui->grid);
 
 	return win;
+}
+
+Config * gui_get_config(GuiInfo *gui)
+{
+	return gui->config;
 }
 
 /* ------------------------------------------------------------------- */

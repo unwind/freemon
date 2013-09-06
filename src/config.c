@@ -23,6 +23,7 @@
 #include <stdio.h>
 
 #include <gio/gio.h>
+#include <gtk/gtk.h>
 
 #include "config.h"
 
@@ -31,6 +32,7 @@
 #define	GRP_GLOBAL	"global"
 
 typedef enum {
+	SIMPLETYPE_END_OF_LIST,	/* Sentinel value. */
 	SIMPLETYPE_GROUP,	/* This is not an actual setting, it's used as a grouping meta thingie. */
 	SIMPLETYPE_BOOLEAN,
 	SIMPLETYPE_INTEGER,
@@ -51,9 +53,10 @@ typedef struct {
 } SettingTemplate;
 
 static const SettingTemplate global_settings[] = {
-	{ SIMPLETYPE_GROUP, .key = GRP_GLOBAL },
+	{ SIMPLETYPE_GROUP, .key = GRP_GLOBAL, .comment = "Global" },
 	{ SIMPLETYPE_BOOLEAN, .value.boolean = false, "autodetect-on-startup", "Automatically detect plugged-in boards on startup?" },
 	{ SIMPLETYPE_BOOLEAN, .value.boolean = false, "connect-all-on-first-autodetect", "Connect to all plugged-in boards the first time autodetect is run?" },
+	{ SIMPLETYPE_END_OF_LIST }
 };
 
 /* ------------------------------------------------------------------- */
@@ -66,66 +69,70 @@ struct Config
 
 /* ------------------------------------------------------------------- */
 
-static void config_keyfile_add_from_templates(Config *cfg, const SettingTemplate *templates, size_t num_templates)
+static void config_keyfile_add_from_templates(Config *cfg, const SettingTemplate *templates)
 {
 	GKeyFile *kf = cfg->keyfile;
 	const char *group = NULL;
 
-	for(size_t i = 0; i < num_templates; ++i)
+	while(true)
 	{
-		const SettingTemplate *here = templates + i;
-		switch(here->type)
+		switch(templates->type)
 		{
-			case SIMPLETYPE_GROUP:
-				group = here->key;
-				continue;	/* Avoid hashing the group. */
-			case SIMPLETYPE_BOOLEAN:
-				g_key_file_set_boolean(kf, group, here->key, here->value.boolean);
-				break;
-			case SIMPLETYPE_INTEGER:
-				g_key_file_set_integer(kf, group, here->key, here->value.integer);
-				break;
-			case SIMPLETYPE_STRING:
-				g_key_file_set_string(kf, group, here->key, here->value.string);
-				break;
+		case SIMPLETYPE_GROUP:
+			group = templates->key;
+			continue;	/* Avoid hashing the group. */
+		case SIMPLETYPE_BOOLEAN:
+			g_key_file_set_boolean(kf, group, templates->key, templates->value.boolean);
+			break;
+		case SIMPLETYPE_INTEGER:
+			g_key_file_set_integer(kf, group, templates->key, templates->value.integer);
+			break;
+		case SIMPLETYPE_STRING:
+			g_key_file_set_string(kf, group, templates->key, templates->value.string);
+			break;
+		default:
+			return;
 		}
-		g_hash_table_insert(cfg->meta, (gpointer) here->key, (gpointer) here);
+		g_hash_table_insert(cfg->meta, (gpointer) templates->key, (gpointer) templates);
+		++templates;
 	}
 }
 
 static void config_keyfile_set_defaults(Config *cfg)
 {
-	config_keyfile_add_from_templates(cfg, global_settings, sizeof global_settings / sizeof *global_settings);
+	config_keyfile_add_from_templates(cfg, global_settings);
 }
 
 /* Copy the settings into a newly created configurations empty keyfile. Also initializes the meta hashing. */
-static void config_keyfile_copy_with_templates(Config *cfg, const Config *src, const SettingTemplate *templates, size_t num_templates)
+static void config_keyfile_copy_with_templates(Config *cfg, const Config *src, const SettingTemplate *templates)
 {
 	GKeyFile *kf_s = src->keyfile, *kf_d = cfg->keyfile;
 	const char *group = NULL;
 	gchar *s;
 
-	for(size_t i = 0; i < num_templates; ++i)
+	while(true)
 	{
-		const SettingTemplate *here = templates + i;
-		switch(here->type)
+		switch(templates->type)
 		{
-			case SIMPLETYPE_GROUP:
-				group = here->key;
-				continue;	/* Avoid hashing the group. */
-			case SIMPLETYPE_BOOLEAN:
-				g_key_file_set_boolean(kf_d, group, here->key, g_key_file_get_boolean(kf_s, group, here->key, NULL));
-				break;
-			case SIMPLETYPE_INTEGER:
-				g_key_file_set_integer(kf_d, group, here->key, g_key_file_get_integer(kf_s, group, here->key, NULL));
-				break;
-			case SIMPLETYPE_STRING:
-				s = g_key_file_get_string(kf_s, group, here->key, NULL);
-				g_key_file_set_string(kf_d, group, here->key, s != NULL ? s : "");
-				g_free(s);
-				break;
+		case SIMPLETYPE_GROUP:
+			group = templates->key;
+			continue;	/* Avoid hashing the group. */
+		case SIMPLETYPE_BOOLEAN:
+			g_key_file_set_boolean(kf_d, group, templates->key, g_key_file_get_boolean(kf_s, group, templates->key, NULL));
+			break;
+		case SIMPLETYPE_INTEGER:
+			g_key_file_set_integer(kf_d, group, templates->key, g_key_file_get_integer(kf_s, group, templates->key, NULL));
+			break;
+		case SIMPLETYPE_STRING:
+			s = g_key_file_get_string(kf_s, group, templates->key, NULL);
+			g_key_file_set_string(kf_d, group, templates->key, s != NULL ? s : "");
+			g_free(s);
+			break;
+		default:
+			return;
 		}
-		g_hash_table_insert(cfg->meta, (gpointer) here->key, (gpointer) here);
+		g_hash_table_insert(cfg->meta, (gpointer) templates->key, (gpointer) templates);
+		++templates;
 	}
 }
 
@@ -218,7 +225,49 @@ Config * config_copy(const Config *cfg)
 	Config *copy = config_new();
 	copy->keyfile = g_key_file_new();
 
-	config_keyfile_copy_with_templates(copy, cfg, global_settings, sizeof global_settings / sizeof *global_settings);
+	config_keyfile_copy_with_templates(copy, cfg, global_settings);
 
 	return copy;
+}
+
+/* ------------------------------------------------------------------- */
+
+static GtkWidget * build_editor_from_templates(const SettingTemplate *templates)
+{
+	GtkWidget *frame = NULL, *grid = NULL, *wid;
+	int y = 0;
+
+	while(templates->type != SIMPLETYPE_END_OF_LIST)
+	{
+		switch(templates->type)
+		{
+		case SIMPLETYPE_GROUP:
+//			frame = gtk_frame_new(templates->comment);
+			grid = gtk_grid_new();
+//			gtk_container_add(GTK_CONTAINER(frame), grid);
+			break;
+		case SIMPLETYPE_BOOLEAN:
+			wid = gtk_check_button_new_with_label(templates->comment);
+			gtk_grid_attach(GTK_GRID(grid), wid, 0, y, 1, 1);
+			++y;
+			break;
+		default:
+			break;
+		}
+	}
+//	return frame;
+	return grid;
+}
+
+Config * config_edit(const Config *cfg, GtkWindow *parent)
+{
+	GtkWidget *dlg = gtk_dialog_new_with_buttons("Preferences", parent, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+
+	GtkWidget *global = build_editor_from_templates(global_settings);
+	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dlg))), global);
+
+	gtk_widget_show_all(dlg);
+	const gint response = gtk_dialog_run(GTK_DIALOG(dlg));
+
+	return NULL;
 }

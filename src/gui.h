@@ -31,7 +31,8 @@
 typedef struct {
 	Config		*config;
 
-	GtkAction	*about;
+	GtkAction	*action_about;
+	GtkAction	*action_config;
 
 	GSList		*available_targets;	/* From autodetect_all(). */
 	GtkWidget	*toolbar;
@@ -47,10 +48,12 @@ typedef struct {
 	GtkWidget	*terminal_menu;	/* A GtkMenu. */
 } GuiInfo;
 
-GtkWidget *	gui_init(GuiInfo *info, const char *title);
+GtkWidget *	gui_init(GuiInfo *gui, const char *title);
+
+Config *	gui_get_config(GuiInfo *gui);
 
 void		gui_target_add(GuiInfo *gui, Target *target);
 
-void		gui_terminal_insert(GuiInfo *info, const char *text, size_t length);
+void		gui_terminal_insert(GuiInfo *gui, const char *text, size_t length);
 
 #endif		/* GUI_H_ */
