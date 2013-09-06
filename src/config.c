@@ -98,6 +98,37 @@ static void config_keyfile_set_defaults(Config *cfg)
 	config_keyfile_add_from_templates(cfg, global_settings, sizeof global_settings / sizeof *global_settings);
 }
 
+/* Copy the settings into a newly created configurations empty keyfile. Also initializes the meta hashing. */
+static void config_keyfile_copy_with_templates(Config *cfg, const Config *src, const SettingTemplate *templates, size_t num_templates)
+{
+	GKeyFile *kf_s = src->keyfile, *kf_d = cfg->keyfile;
+	const char *group = NULL;
+	gchar *s;
+
+	for(size_t i = 0; i < num_templates; ++i)
+	{
+		const SettingTemplate *here = templates + i;
+		switch(here->type)
+		{
+			case SIMPLETYPE_GROUP:
+				group = here->key;
+				continue;	/* Avoid hashing the group. */
+			case SIMPLETYPE_BOOLEAN:
+				g_key_file_set_boolean(kf_d, group, here->key, g_key_file_get_boolean(kf_s, group, here->key, NULL));
+				break;
+			case SIMPLETYPE_INTEGER:
+				g_key_file_set_integer(kf_d, group, here->key, g_key_file_get_integer(kf_s, group, here->key, NULL));
+				break;
+			case SIMPLETYPE_STRING:
+				s = g_key_file_get_string(kf_s, group, here->key, NULL);
+				g_key_file_set_string(kf_d, group, here->key, s != NULL ? s : "");
+				g_free(s);
+				break;
+		}
+		g_hash_table_insert(cfg->meta, (gpointer) here->key, (gpointer) here);
+	}
+}
+
 static bool get_filename(bool with_file, char *buf, size_t buf_max)
 {
 	const char *prg = "freemon";
@@ -187,7 +218,7 @@ Config * config_copy(const Config *cfg)
 	Config *copy = config_new();
 	copy->keyfile = g_key_file_new();
 
-	/* TODO: There might be something missing, here. */
+	config_keyfile_copy_with_templates(copy, cfg, global_settings, sizeof global_settings / sizeof *global_settings);
 
 	return copy;
 }
