@@ -32,7 +32,6 @@
 #define	GRP_GLOBAL	"global"
 
 typedef enum {
-	SIMPLETYPE_END_OF_LIST,	/* Sentinel value. */
 	SIMPLETYPE_GROUP,	/* This is not an actual setting, it's used as a grouping meta thingie. */
 	SIMPLETYPE_BOOLEAN,
 	SIMPLETYPE_INTEGER,
@@ -52,11 +51,20 @@ typedef struct {
 	const char	*comment;
 } SettingTemplate;
 
-static const SettingTemplate global_settings[] = {
-	{ SIMPLETYPE_GROUP, .key = GRP_GLOBAL, .comment = "Global Settings" },
-	{ SIMPLETYPE_BOOLEAN, .value.boolean = false, "autodetect-on-startup", "Automatically detect plugged-in boards on startup?" },
-	{ SIMPLETYPE_BOOLEAN, .value.boolean = false, "connect-all-on-first-autodetect", "Connect to all plugged-in boards the first time autodetect is run?" },
-	{ SIMPLETYPE_END_OF_LIST }
+#define	TMPL_REF(k)			setting_ ## k
+#define	TMPL_DEF_GROUP(k, c)		static const SettingTemplate TMPL_REF(k) = { .type = SIMPLETYPE_GROUP, .key = #k, .comment = c }
+#define	TMPL_DEF_BOOLEAN(k, v, c)	static const SettingTemplate TMPL_REF(k) = { .type = SIMPLETYPE_BOOLEAN, .value.boolean = v, .key = #k, .comment = c }
+#define TMPL_KEY(k)			TMPL_REF(k).key
+
+TMPL_DEF_GROUP(global, "Global settings");
+TMPL_DEF_BOOLEAN(autodetect_on_startup, false, "Automatically detect plugged-in boards on startup?");
+TMPL_DEF_BOOLEAN(connect_all_on_first_autodetect, false, "Connect to all plugged-in boards the first time autodetect is run?");
+
+static const SettingTemplate *global_settings[] = {
+	&TMPL_REF(global),
+	&TMPL_REF(autodetect_on_startup),
+	&TMPL_REF(connect_all_on_first_autodetect),
+	NULL,
 };
 
 /* ------------------------------------------------------------------- */
@@ -69,32 +77,29 @@ struct Config
 
 /* ------------------------------------------------------------------- */
 
-static void config_keyfile_add_from_templates(Config *cfg, const SettingTemplate *templates)
+static void config_keyfile_add_from_templates(Config *cfg, const SettingTemplate **templates)
 {
 	GKeyFile *kf = cfg->keyfile;
 	const char *group = NULL;
 
-	while(true)
+	for(const SettingTemplate *here = *templates; here != NULL; here = *++templates)
 	{
-		switch(templates->type)
+		switch(here->type)
 		{
 		case SIMPLETYPE_GROUP:
-			group = templates->key;
+			group = here->key;
 			continue;	/* Avoid hashing the group. */
 		case SIMPLETYPE_BOOLEAN:
-			g_key_file_set_boolean(kf, group, templates->key, templates->value.boolean);
+			g_key_file_set_boolean(kf, group, here->key, here->value.boolean);
 			break;
 		case SIMPLETYPE_INTEGER:
-			g_key_file_set_integer(kf, group, templates->key, templates->value.integer);
+			g_key_file_set_integer(kf, group, here->key, here->value.integer);
 			break;
 		case SIMPLETYPE_STRING:
-			g_key_file_set_string(kf, group, templates->key, templates->value.string);
+			g_key_file_set_string(kf, group, here->key, here->value.string);
 			break;
-		default:
-			return;
 		}
-		g_hash_table_insert(cfg->meta, (gpointer) templates->key, (gpointer) templates);
-		++templates;
+		g_hash_table_insert(cfg->meta, (gpointer) here->key, (gpointer) here);
 	}
 }
 
@@ -104,36 +109,34 @@ static void config_keyfile_set_defaults(Config *cfg)
 }
 
 /* Copy the settings into a newly created configurations empty keyfile. Also initializes the meta hashing. */
-static void config_keyfile_copy_with_templates(Config *cfg, const Config *src, const SettingTemplate *templates)
+static void config_keyfile_copy_with_templates(Config *cfg, const Config *src, const SettingTemplate **templates)
 {
 	GKeyFile *kf_s = src->keyfile, *kf_d = cfg->keyfile;
 	const char *group = NULL;
 	gchar *s;
 
-	while(templates->type != SIMPLETYPE_END_OF_LIST)
+	for(const SettingTemplate *here = *templates; here != NULL; here = *++templates)
 	{
-		switch(templates->type)
+		switch(here->type)
 		{
 		case SIMPLETYPE_GROUP:
-			group = templates->key;
-			++templates;
+			group = here->key;
 			continue;	/* Avoid hashing the group. */
 		case SIMPLETYPE_BOOLEAN:
-			g_key_file_set_boolean(kf_d, group, templates->key, g_key_file_get_boolean(kf_s, group, templates->key, NULL));
+			g_key_file_set_boolean(kf_d, group, here->key, g_key_file_get_boolean(kf_s, group, here->key, NULL));
 			break;
 		case SIMPLETYPE_INTEGER:
-			g_key_file_set_integer(kf_d, group, templates->key, g_key_file_get_integer(kf_s, group, templates->key, NULL));
+			g_key_file_set_integer(kf_d, group, here->key, g_key_file_get_integer(kf_s, group, here->key, NULL));
 			break;
 		case SIMPLETYPE_STRING:
-			s = g_key_file_get_string(kf_s, group, templates->key, NULL);
-			g_key_file_set_string(kf_d, group, templates->key, s != NULL ? s : "");
+			s = g_key_file_get_string(kf_s, group, here->key, NULL);
+			g_key_file_set_string(kf_d, group, here->key, s != NULL ? s : "");
 			g_free(s);
 			break;
 		default:
-			return;
+			break;
 		}
-		g_hash_table_insert(cfg->meta, (gpointer) templates->key, (gpointer) templates);
-		++templates;
+		g_hash_table_insert(cfg->meta, (gpointer) here->key, (gpointer) here);
 	}
 }
 
@@ -279,32 +282,31 @@ static void init_check_button(GtkWidget *wid, Config *cfg, const char *group, co
 	g_signal_connect(G_OBJECT(wid), "toggled", G_CALLBACK(evt_check_button_toggled), cfg);
 }
 
-static GtkWidget * build_editor_from_templates(Config *cfg, const SettingTemplate *templates)
+static GtkWidget * build_editor_from_templates(Config *cfg, const SettingTemplate **templates)
 {
 	GtkWidget *frame = NULL, *grid = NULL, *wid;
 	const char *group = NULL;
 	int y = 0;
 
-	while(templates->type != SIMPLETYPE_END_OF_LIST)
+	for(const SettingTemplate *here = *templates; here != NULL; here = *++templates)
 	{
-		switch(templates->type)
+		switch(here->type)
 		{
 		case SIMPLETYPE_GROUP:
-			group = templates->key;
-			frame = gtk_frame_new(templates->comment);
+			group = here->key;
+			frame = gtk_frame_new(here->comment);
 			grid = gtk_grid_new();
 			gtk_container_add(GTK_CONTAINER(frame), grid);
 			break;
 		case SIMPLETYPE_BOOLEAN:
-			wid = gtk_check_button_new_with_label(templates->comment);
-			init_check_button(wid, cfg, group, templates);
+			wid = gtk_check_button_new_with_label(here->comment);
+			init_check_button(wid, cfg, group, here);
 			gtk_grid_attach(GTK_GRID(grid), wid, 0, y, 1, 1);
 			++y;
 			break;
 		default:
 			break;
 		}
-		++templates;
 	}
 	return frame;
 }
@@ -334,5 +336,5 @@ Config * config_edit(const Config *cfg, GtkWindow *parent)
 
 bool config_get_autodetect_on_startup(const Config *cfg)
 {
-	return cfg != NULL ? g_key_file_get_boolean(cfg->keyfile, GRP_GLOBAL, "autodetect-on-startup", NULL) : false;
+	return cfg != NULL ? g_key_file_get_boolean(cfg->keyfile, GRP_GLOBAL, TMPL_KEY(autodetect_on_startup), NULL) : false;
 }
