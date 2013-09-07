@@ -329,3 +329,10 @@ Config * config_edit(const Config *cfg, GtkWindow *parent)
 	}
 	return editing;
 }
+
+/* ------------------------------------------------------------------- */
+
+bool config_get_autodetect_on_startup(const Config *cfg)
+{
+	return cfg != NULL ? g_key_file_get_boolean(cfg->keyfile, GRP_GLOBAL, "autodetect-on-startup", NULL) : false;
+}

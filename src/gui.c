@@ -224,6 +224,9 @@ GtkWidget * gui_init(GuiInfo *gui, const char *title)
 
 	gtk_container_add(GTK_CONTAINER(win), gui->grid);
 
+	if(config_get_autodetect_on_startup(gui->config))
+		evt_targets_refresh_clicked(NULL, gui);
+
 	return win;
 }
 
