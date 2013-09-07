@@ -37,5 +37,6 @@ void		config_delete(Config *cfg);
 Config *	config_edit(const Config *cfg, GtkWindow *parent);
 
 bool		config_get_autodetect_on_startup(const Config *cfg);
+bool		config_get_autoconnect_once(const Config *cfg);
 
 #endif		/* CONFIG_H_ */

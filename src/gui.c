@@ -151,6 +151,8 @@ static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
 	GSList *targets = autodetect_all();
 	if(targets != NULL)
 	{
+		static bool autoconnected = false;
+
 		for(GSList *iter = targets; iter != NULL; iter = g_slist_next(iter))
 		{
 			const AutodetectedTarget *at = iter->data;
@@ -168,6 +170,11 @@ static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
 			autodetect_free(gui->available_targets);
 		gui->available_targets = targets;
 		targets_update_sensitivity(gui, NULL);
+		if(!autoconnected && config_get_autoconnect_once(gui_config_get(gui)))
+		{
+			evt_targets_clicked(GTK_MENU_TOOL_BUTTON(gui->targets), gui);
+			autoconnected = true;
+		}
 	}
 }
 

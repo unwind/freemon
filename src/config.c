@@ -58,12 +58,12 @@ typedef struct {
 
 TMPL_DEF_GROUP(global, "Global settings");
 TMPL_DEF_BOOLEAN(autodetect_on_startup, false, "Automatically detect plugged-in boards on startup?");
-TMPL_DEF_BOOLEAN(connect_all_on_first_autodetect, false, "Connect to all plugged-in boards the first time autodetect is run?");
+TMPL_DEF_BOOLEAN(connect_first_on_first_autodetect, false, "Connect to first plugged-in board, the first time autodetect is run?");
 
 static const SettingTemplate *global_settings[] = {
 	&TMPL_REF(global),
 	&TMPL_REF(autodetect_on_startup),
-	&TMPL_REF(connect_all_on_first_autodetect),
+	&TMPL_REF(connect_first_on_first_autodetect),
 	NULL,
 };
 
@@ -337,4 +337,9 @@ Config * config_edit(const Config *cfg, GtkWindow *parent)
 bool config_get_autodetect_on_startup(const Config *cfg)
 {
 	return cfg != NULL ? g_key_file_get_boolean(cfg->keyfile, GRP_GLOBAL, TMPL_KEY(autodetect_on_startup), NULL) : false;
+}
+
+bool config_get_autoconnect_once(const Config *cfg)
+{
+	return cfg != NULL ? g_key_file_get_boolean(cfg->keyfile, GRP_GLOBAL, TMPL_KEY(connect_first_on_first_autodetect), NULL) : false;
 }
