@@ -2,7 +2,7 @@
 # The best makefiles are hand-writtten.
 #
 
-DEFS	= -DVERSION=\"1.1\"
+DEFS	= -DVERSION=\"1.2\"
 
 PKGS	= vte-2.90
 
