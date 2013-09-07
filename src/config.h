@@ -28,6 +28,8 @@ Config *	config_init(void);
 
 Config *	config_copy(const Config *old);
 
+void		config_delete(Config *cfg);
+
 Config *	config_edit(const Config *cfg, GtkWindow *parent);
 
 #endif		/* CONFIG_H_ */

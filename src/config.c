@@ -110,12 +110,13 @@ static void config_keyfile_copy_with_templates(Config *cfg, const Config *src, c
 	const char *group = NULL;
 	gchar *s;
 
-	while(true)
+	while(templates->type != SIMPLETYPE_END_OF_LIST)
 	{
 		switch(templates->type)
 		{
 		case SIMPLETYPE_GROUP:
 			group = templates->key;
+			++templates;
 			continue;	/* Avoid hashing the group. */
 		case SIMPLETYPE_BOOLEAN:
 			g_key_file_set_boolean(kf_d, group, templates->key, g_key_file_get_boolean(kf_s, group, templates->key, NULL));
@@ -230,11 +231,52 @@ Config * config_copy(const Config *cfg)
 	return copy;
 }
 
+void config_delete(Config *cfg)
+{
+	if(cfg != NULL)
+	{
+		g_key_file_free(cfg->keyfile);
+		g_hash_table_destroy(cfg->meta);
+		g_free(cfg);
+	}
+}
+
 /* ------------------------------------------------------------------- */
 
-static GtkWidget * build_editor_from_templates(const SettingTemplate *templates)
+static void widget_data_set(GtkWidget *wid, const char *group, const SettingTemplate *template)
+{
+	g_object_set_data(G_OBJECT(wid), "group", (gpointer) group);
+	g_object_set_data(G_OBJECT(wid), "template", (gpointer) template);
+}
+
+static void widget_data_get(GtkWidget *wid, const char **group, const SettingTemplate **template)
+{
+	*group = g_object_get_data(G_OBJECT(wid), "group");
+	*template = g_object_get_data(G_OBJECT(wid), "meta");
+}
+
+static void evt_check_button_toggled(GtkWidget *wid, gpointer user)
+{
+	const char *group;
+	const SettingTemplate *template;
+	Config *cfg = user;
+
+	widget_data_get(wid, &group, &template);
+	g_key_file_set_boolean(cfg->keyfile, group, template->key, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wid)));
+}
+
+static void init_check_button(GtkWidget *wid, Config *cfg, const char *group, const SettingTemplate *template)
+{
+	widget_data_set(wid, group, template);
+	const gboolean value = g_key_file_get_boolean(cfg->keyfile, group, template->key, NULL);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wid), value);
+	g_signal_connect(G_OBJECT(wid), "toggled", G_CALLBACK(evt_check_button_toggled), cfg);
+}
+
+static GtkWidget * build_editor_from_templates(Config *cfg, const SettingTemplate *templates)
 {
 	GtkWidget *frame = NULL, *grid = NULL, *wid;
+	const char *group = NULL;
 	int y = 0;
 
 	while(templates->type != SIMPLETYPE_END_OF_LIST)
@@ -242,12 +284,14 @@ static GtkWidget * build_editor_from_templates(const SettingTemplate *templates)
 		switch(templates->type)
 		{
 		case SIMPLETYPE_GROUP:
+			group = templates->key;
 			frame = gtk_frame_new(templates->comment);
 			grid = gtk_grid_new();
 			gtk_container_add(GTK_CONTAINER(frame), grid);
 			break;
 		case SIMPLETYPE_BOOLEAN:
 			wid = gtk_check_button_new_with_label(templates->comment);
+			init_check_button(wid, cfg, group, templates);
 			gtk_grid_attach(GTK_GRID(grid), wid, 0, y, 1, 1);
 			++y;
 			break;
@@ -261,14 +305,21 @@ static GtkWidget * build_editor_from_templates(const SettingTemplate *templates)
 
 Config * config_edit(const Config *cfg, GtkWindow *parent)
 {
+	Config *editing = config_copy(cfg);
+
 	GtkWidget *dlg = gtk_dialog_new_with_buttons("Preferences", parent, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
 
-	GtkWidget *global = build_editor_from_templates(global_settings);
+	GtkWidget *global = build_editor_from_templates(editing, global_settings);
 	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dlg))), global);
 
 	gtk_widget_show_all(dlg);
 	const gint response = gtk_dialog_run(GTK_DIALOG(dlg));
 	gtk_widget_destroy(dlg);
 
-	return NULL;
+	if(response != GTK_RESPONSE_OK)
+	{
+		config_delete(editing);
+		editing = NULL;
+	}
+	return editing;
 }
