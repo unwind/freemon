@@ -53,7 +53,7 @@ typedef struct {
 } SettingTemplate;
 
 static const SettingTemplate global_settings[] = {
-	{ SIMPLETYPE_GROUP, .key = GRP_GLOBAL, .comment = "Global" },
+	{ SIMPLETYPE_GROUP, .key = GRP_GLOBAL, .comment = "Global Settings" },
 	{ SIMPLETYPE_BOOLEAN, .value.boolean = false, "autodetect-on-startup", "Automatically detect plugged-in boards on startup?" },
 	{ SIMPLETYPE_BOOLEAN, .value.boolean = false, "connect-all-on-first-autodetect", "Connect to all plugged-in boards the first time autodetect is run?" },
 	{ SIMPLETYPE_END_OF_LIST }
@@ -262,7 +262,8 @@ static void evt_check_button_toggled(GtkWidget *wid, gpointer user)
 	Config *cfg = user;
 
 	widget_data_get(wid, &group, &template);
-	g_key_file_set_boolean(cfg->keyfile, group, template->key, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wid)));
+	const gboolean value = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wid));
+	g_key_file_set_boolean(cfg->keyfile, group, template->key, value);
 }
 
 static void init_check_button(GtkWidget *wid, Config *cfg, const char *group, const SettingTemplate *template)

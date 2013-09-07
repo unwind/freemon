@@ -29,6 +29,10 @@ static void evt_config_activate(GtkAction *action, gpointer user)
 {
 	const Config *old = gui_get_config(user);
 	Config *new_cfg = config_edit(old, NULL);
+	if(new_cfg != NULL)
+	{
+		gui_set_config(user, new_cfg);
+	}
 }
 
 /* ------------------------------------------------------------------- */

@@ -227,9 +227,18 @@ GtkWidget * gui_init(GuiInfo *gui, const char *title)
 	return win;
 }
 
+/* ------------------------------------------------------------------- */
+
 Config * gui_get_config(GuiInfo *gui)
 {
 	return gui->config;
+}
+
+void gui_set_config(GuiInfo *gui, Config *cfg)
+{
+	if(gui->config != NULL)
+		config_delete(gui->config);
+	gui->config = cfg;
 }
 
 /* ------------------------------------------------------------------- */
