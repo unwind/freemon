@@ -1,5 +1,5 @@
 /*
- * Freemon: main entrypoint module.
+ * Freemon: persistent configuration module.
  *
  * Copyright 2013 Emil Brink <emil@obsession.se>.
  * 
@@ -19,27 +19,24 @@
  * along with Freemon.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdlib.h>
+#if !defined CONFIG_H_
+#define	CONFIG_H_
 
-#include "autodetect.h"
-#include "config.h"
-#include "gui.h"
-#include "target.h"
-#include "tty.h"
+#include <stdbool.h>
 
-int main(int argc, char *argv[])
-{
-	GuiInfo		gui;
-	GtkWidget	*mw;
+typedef struct Config	Config;
 
-	gtk_init(&argc, &argv);
+Config *	config_init(void);
 
-	mw = gui_init(&gui, "Freemon v" VERSION " by Emil Brink");
+Config *	config_copy(const Config *old);
 
-	gtk_widget_show_all(mw);
-	gtk_main();
-	gtk_widget_destroy(mw);
-	config_save(gui_config_get(&gui));
+bool		config_save(const Config *cfg);
 
-	return EXIT_SUCCESS;
-}
+void		config_delete(Config *cfg);
+
+Config *	config_edit(const Config *cfg, GtkWindow *parent);
+
+bool		config_get_autodetect_on_startup(const Config *cfg);
+bool		config_get_autoconnect_once(const Config *cfg);
+
+#endif		/* CONFIG_H_ */

@@ -1,5 +1,5 @@
 /*
- * Freemon: main entrypoint module.
+ * Freemon: config window action module.
  *
  * Copyright 2013 Emil Brink <emil@obsession.se>.
  * 
@@ -19,27 +19,29 @@
  * along with Freemon.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdlib.h>
-
-#include "autodetect.h"
+#include "action-config.h"
 #include "config.h"
 #include "gui.h"
-#include "target.h"
-#include "tty.h"
 
-int main(int argc, char *argv[])
+/* ------------------------------------------------------------------- */
+
+static void evt_config_activate(GtkAction *action, gpointer user)
 {
-	GuiInfo		gui;
-	GtkWidget	*mw;
+	const Config *old = gui_config_get(user);
+	Config *new_cfg = config_edit(old, NULL);
+	if(new_cfg != NULL)
+	{
+		gui_config_set(user, new_cfg);
+	}
+}
 
-	gtk_init(&argc, &argv);
+/* ------------------------------------------------------------------- */
 
-	mw = gui_init(&gui, "Freemon v" VERSION " by Emil Brink");
+GtkAction * action_config_new(GuiInfo *gui)
+{
+	GtkAction *config = gtk_action_new("preferences", "Preferences", "Edits program preferences.", GTK_STOCK_PREFERENCES);
 
-	gtk_widget_show_all(mw);
-	gtk_main();
-	gtk_widget_destroy(mw);
-	config_save(gui_config_get(&gui));
+	g_signal_connect(G_OBJECT(config), "activate", G_CALLBACK(evt_config_activate), gui);
 
-	return EXIT_SUCCESS;
+	return config;
 }

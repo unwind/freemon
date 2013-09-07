@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "action-about.h"
+#include "action-config.h"
 #include "autodetect.h"
 
 #include "gui.h"
@@ -154,6 +155,8 @@ static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
 	GSList *targets = autodetect_all();
 	if(targets != NULL)
 	{
+		static bool autoconnected = false;
+
 		for(GSList *iter = targets; iter != NULL; iter = g_slist_next(iter))
 		{
 			const AutodetectedTarget *at = iter->data;
@@ -171,17 +174,25 @@ static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
 			autodetect_free(gui->available_targets);
 		gui->available_targets = targets;
 		targets_update_sensitivity(gui, NULL);
+		if(!autoconnected && config_get_autoconnect_once(gui_config_get(gui)))
+		{
+			evt_targets_clicked(GTK_MENU_TOOL_BUTTON(gui->targets), gui);
+			autoconnected = true;
+		}
 	}
 }
 
-GtkWidget * gui_mainwindow_open(GuiInfo *gui, const char *title)
+GtkWidget * gui_init(GuiInfo *gui, const char *title)
 {
 	GtkWidget	*win;
 
 	if(gui == NULL)
 		return NULL;
 
-	gui->about = action_about_new();
+	gui->config = config_init();
+
+	gui->action_about = action_about_new();
+	gui->action_config = action_config_new(gui);
 	gui->available_targets = NULL;
 
 	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -210,8 +221,10 @@ GtkWidget * gui_mainwindow_open(GuiInfo *gui, const char *title)
 	gtk_separator_tool_item_set_draw(GTK_SEPARATOR_TOOL_ITEM(ti), FALSE);
 	gtk_tool_item_set_expand(ti, TRUE);
 	gtk_toolbar_insert(GTK_TOOLBAR(gui->toolbar), ti, 2);
-	ti = GTK_TOOL_ITEM(gtk_action_create_tool_item(gui->about));
+	ti = GTK_TOOL_ITEM(gtk_action_create_tool_item(gui->action_config));
 	gtk_toolbar_insert(GTK_TOOLBAR(gui->toolbar), ti, 3);
+	ti = GTK_TOOL_ITEM(gtk_action_create_tool_item(gui->action_about));
+	gtk_toolbar_insert(GTK_TOOLBAR(gui->toolbar), ti, 4);
 
 	gtk_widget_set_hexpand(gui->toolbar, TRUE);
 	gtk_widget_set_halign(gui->toolbar, GTK_ALIGN_FILL);
@@ -222,7 +235,24 @@ GtkWidget * gui_mainwindow_open(GuiInfo *gui, const char *title)
 
 	gtk_container_add(GTK_CONTAINER(win), gui->grid);
 
+	if(config_get_autodetect_on_startup(gui->config))
+		evt_targets_refresh_clicked(NULL, gui);
+
 	return win;
+}
+
+/* ------------------------------------------------------------------- */
+
+Config * gui_config_get(GuiInfo *gui)
+{
+	return gui->config;
+}
+
+void gui_config_set(GuiInfo *gui, Config *cfg)
+{
+	if(gui->config != NULL)
+		config_delete(gui->config);
+	gui->config = cfg;
 }
 
 /* ------------------------------------------------------------------- */

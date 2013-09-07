@@ -1,5 +1,5 @@
 /*
- * Freemon: main entrypoint module.
+ * Freemon: settings window action module.
  *
  * Copyright 2013 Emil Brink <emil@obsession.se>.
  * 
@@ -19,27 +19,13 @@
  * along with Freemon.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdlib.h>
+#if !defined ACTION_CONFIG_H
+#define	ACTION_CONFIG_H
 
-#include "autodetect.h"
-#include "config.h"
+#include <gtk/gtk.h>
+
 #include "gui.h"
-#include "target.h"
-#include "tty.h"
 
-int main(int argc, char *argv[])
-{
-	GuiInfo		gui;
-	GtkWidget	*mw;
+GtkAction *	action_config_new(GuiInfo *gui);
 
-	gtk_init(&argc, &argv);
-
-	mw = gui_init(&gui, "Freemon v" VERSION " by Emil Brink");
-
-	gtk_widget_show_all(mw);
-	gtk_main();
-	gtk_widget_destroy(mw);
-	config_save(gui_config_get(&gui));
-
-	return EXIT_SUCCESS;
-}
+#endif		/* ACTION_CONFIG_H */
