@@ -252,7 +252,7 @@ static void widget_data_set(GtkWidget *wid, const char *group, const SettingTemp
 static void widget_data_get(GtkWidget *wid, const char **group, const SettingTemplate **template)
 {
 	*group = g_object_get_data(G_OBJECT(wid), "group");
-	*template = g_object_get_data(G_OBJECT(wid), "meta");
+	*template = g_object_get_data(G_OBJECT(wid), "template");
 }
 
 static void evt_check_button_toggled(GtkWidget *wid, gpointer user)
