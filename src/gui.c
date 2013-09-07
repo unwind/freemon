@@ -229,12 +229,12 @@ GtkWidget * gui_init(GuiInfo *gui, const char *title)
 
 /* ------------------------------------------------------------------- */
 
-Config * gui_get_config(GuiInfo *gui)
+Config * gui_config_get(GuiInfo *gui)
 {
 	return gui->config;
 }
 
-void gui_set_config(GuiInfo *gui, Config *cfg)
+void gui_config_set(GuiInfo *gui, Config *cfg)
 {
 	if(gui->config != NULL)
 		config_delete(gui->config);

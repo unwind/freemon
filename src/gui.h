@@ -50,8 +50,8 @@ typedef struct {
 
 GtkWidget *	gui_init(GuiInfo *gui, const char *title);
 
-Config *	gui_get_config(GuiInfo *gui);
-void		gui_set_config(GuiInfo *gui, Config *cfg);
+Config *	gui_config_get(GuiInfo *gui);
+void		gui_config_set(GuiInfo *gui, Config *cfg);
 
 void		gui_target_add(GuiInfo *gui, Target *target);
 

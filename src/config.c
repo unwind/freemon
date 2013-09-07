@@ -231,6 +231,11 @@ Config * config_copy(const Config *cfg)
 	return copy;
 }
 
+bool config_save(const Config *cfg)
+{
+	return config_keyfile_save(cfg);
+}
+
 void config_delete(Config *cfg)
 {
 	if(cfg != NULL)

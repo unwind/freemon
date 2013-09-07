@@ -22,6 +22,7 @@
 #include <stdlib.h>
 
 #include "autodetect.h"
+#include "config.h"
 #include "gui.h"
 #include "target.h"
 #include "tty.h"
@@ -38,6 +39,7 @@ int main(int argc, char *argv[])
 	gtk_widget_show_all(mw);
 	gtk_main();
 	gtk_widget_destroy(mw);
+	config_save(gui_config_get(&gui));
 
 	return EXIT_SUCCESS;
 }

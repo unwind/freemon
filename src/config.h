@@ -22,11 +22,15 @@
 #if !defined CONFIG_H_
 #define	CONFIG_H_
 
+#include <stdbool.h>
+
 typedef struct Config	Config;
 
 Config *	config_init(void);
 
 Config *	config_copy(const Config *old);
+
+bool		config_save(const Config *cfg);
 
 void		config_delete(Config *cfg);
 
