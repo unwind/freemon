@@ -254,6 +254,7 @@ static GtkWidget * build_editor_from_templates(const SettingTemplate *templates)
 		default:
 			break;
 		}
+		++templates;
 	}
 	return frame;
 }
@@ -262,8 +263,8 @@ Config * config_edit(const Config *cfg, GtkWindow *parent)
 {
 	GtkWidget *dlg = gtk_dialog_new_with_buttons("Preferences", parent, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
 
-//	GtkWidget *global = build_editor_from_templates(global_settings);
-//	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dlg))), global);
+	GtkWidget *global = build_editor_from_templates(global_settings);
+	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dlg))), global);
 
 	gtk_widget_show_all(dlg);
 	const gint response = gtk_dialog_run(GTK_DIALOG(dlg));
