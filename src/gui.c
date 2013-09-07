@@ -75,10 +75,14 @@ static void target_make_sensitive(GuiInfo *gui, const Target *target)
 	{
 		GtkWidget *item = iter->data;
 		const AutodetectedTarget *at = g_object_get_data(G_OBJECT(item), "target");
-		if(strcmp(at->device, target_get_device(target)) == 0)
+		const char *device = target_get_device(target);
+		if(device != NULL)
 		{
-			gtk_widget_set_sensitive(item, TRUE);
-			break;
+			if(strcmp(at->device, device) == 0)
+			{
+				gtk_widget_set_sensitive(item, TRUE);
+				break;
+			}
 		}
 	}
 	g_list_free(items);

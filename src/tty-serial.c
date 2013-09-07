@@ -99,6 +99,7 @@ TtyInfo * tty_serial_open(const char *device, Target *target)
 	TtyInfoSerial	*serial;
 
 	serial = g_malloc(sizeof *serial);
+	errno = 0;
 	serial->fd = open(device, O_RDWR | O_NOCTTY | O_NONBLOCK);
 	if(serial->fd >= 0)
 	{
@@ -114,7 +115,10 @@ TtyInfo * tty_serial_open(const char *device, Target *target)
 		close(serial->fd);
 	}
 	else
-		fprintf(stderr, "Freemon: failed to open serial port '%s'\n", device);
+	{
+		const char *err = strerror(errno);
+		fprintf(stderr, "Freemon: failed to open serial port '%s' (%s)\n", device, err);
+	}
 	g_free(serial);
 
 	return NULL;

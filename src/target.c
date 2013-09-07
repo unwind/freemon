@@ -77,7 +77,7 @@ const char * target_get_name(const Target *target)
 
 const char * target_get_device(const Target *target)
 {
-	return target->tty->device;
+	return target->tty != NULL ? target->tty->device : NULL;
 }
 
 const char * target_get_binary(const Target *target)
