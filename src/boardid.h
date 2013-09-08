@@ -1,5 +1,5 @@
 /*
- * Freemon: target autodetection module.
+ * Freemon: board identification module.
  *
  * Copyright 2013 Emil Brink <emil@obsession.se>.
  * 
@@ -19,24 +19,25 @@
  * along with Freemon.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#if defined __linux
-#include "autodetect-linux.c"
-#else
-#error "Missing autodetect implementation for this platform, sorry!"
-#endif
+#if !defined BOARDID_H_
+#define	BOARDID_H_
+
+#include <stdbool.h>
+#include <stdint.h>
 
 /* ------------------------------------------------------------------- */
 
-bool autodetect_target_to_string(char *buf, size_t buf_max, const AutodetectedTarget *at)
-{
-	return g_snprintf(buf, buf_max, "%s on %s", at->id.board, at->device) < buf_max;
-}
+typedef struct {
+	char		board[16];	/* A name, such as "FRDM-KL25Z". */
+	uint32_t	tuid[4];
+} BoardId;
 
 /* ------------------------------------------------------------------- */
 
-void autodetect_free(GSList *list)
-{
-	for(GSList *iter = list; iter != NULL; iter = g_slist_next(iter))
-		g_free(iter->data);
-	g_slist_free(list);
-}
+void	boardid_init(BoardId *id);
+bool	boardid_valid(const BoardId *id);
+bool	boardid_equal(const BoardId *id1, const BoardId *id2);
+
+bool	boardid_set_from_target(BoardId *id, const char *path);
+
+#endif		/* BOARDID_H_ */
