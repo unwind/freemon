@@ -70,7 +70,7 @@ static const SettingTemplate *global_settings[] = {
 };
 
 TMPL_DEF_GROUP(board, "Per-board settings");
-TMPL_DEF_STRING(board_name, "", "User-friendly name for this board.");
+TMPL_DEF_STRING(board_name, "", "User-friendly name for this board");
 TMPL_DEF_BOOLEAN(reset_tty_on_upload, false, "Reset (clear) the terminal window after uploading new code to the board?");
 TMPL_DEF_BOOLEAN(upload_on_change, false, "Monitor the selected binary for changes, and upload new files automatically?");
 
@@ -323,39 +323,81 @@ static void init_check_button(GtkWidget *wid, Config *cfg, const char *group, co
 	g_signal_connect(G_OBJECT(wid), "toggled", G_CALLBACK(evt_check_button_toggled), cfg);
 }
 
-static GtkWidget * build_editor_from_templates(Config *cfg, const SettingTemplate **templates)
+static GtkWidget * build_editor_from_templates(Config *cfg, const char *group, const char *group_comment, const SettingTemplate **templates)
 {
 	GtkWidget *frame = NULL, *grid = NULL, *wid;
-	const char *group = NULL;
 	int y = 0;
 
 	for(const SettingTemplate *here = *templates; here != NULL; here = *++templates)
 	{
+		if(group != NULL && frame == NULL)
+		{
+			frame = gtk_frame_new(group_comment);
+			grid = gtk_grid_new();
+			gtk_container_add(GTK_CONTAINER(frame), grid);
+		}
+
+		wid = NULL;
 		switch(here->type)
 		{
 		case SIMPLETYPE_GROUP:
 			group = here->key;
-			frame = gtk_frame_new(here->comment);
-			grid = gtk_grid_new();
-			gtk_container_add(GTK_CONTAINER(frame), grid);
+			group_comment = here->comment;
 			break;
 		case SIMPLETYPE_BOOLEAN:
 			wid = gtk_check_button_new_with_label(here->comment);
 			init_check_button(wid, cfg, group, here);
-			gtk_grid_attach(GTK_GRID(grid), wid, 0, y, 1, 1);
-			++y;
+			break;
+		case SIMPLETYPE_STRING:
+			{
+				wid = gtk_grid_new();
+				GtkWidget *label = gtk_label_new(here->comment);
+				gtk_grid_attach(GTK_GRID(wid), label, 0, 0, 1, 1);
+				GtkWidget *entry = gtk_entry_new();
+				gtk_widget_set_hexpand(entry, TRUE);
+				gtk_grid_attach(GTK_GRID(wid), entry, 1, 0, 1, 1);
+			}
 			break;
 		default:
 			break;
+		}
+		if(wid != NULL)
+		{
+			gtk_grid_attach(GTK_GRID(grid), wid, 0, y, 1, 1);
+			++y;
 		}
 	}
 	return frame;
 }
 
-static GtkWidget * build_editor_for_boards(const Config *cfg, const SettingTemplate **templates)
+static void evt_boards_row_activated(GtkWidget *wid, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user)
+{
+	Config *cfg = user;
+	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(wid));
+	GtkTreeIter iter;
+
+	if(gtk_tree_model_get_iter(model, &iter, path))
+	{
+		gpointer tmp;
+		gtk_tree_model_get(model, &iter, 2, &tmp, -1);
+		const KnownBoard *kb = tmp;
+		char group[64];
+		if(boardid_to_keyfile_group(&kb->id, group, sizeof group))
+		{
+			GtkWidget *editor = build_editor_from_templates(cfg, group, "Board settings", board_settings);
+			GtkWidget *dlg = gtk_dialog_new_with_buttons("Board settings", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+			gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dlg))), editor);
+			gtk_widget_show_all(editor);
+			const gint response = gtk_dialog_run(GTK_DIALOG(dlg));
+			gtk_widget_destroy(dlg);
+		}
+	}
+}
+
+static GtkWidget * build_editor_for_boards(const Config *cfg)
 {
 	GtkWidget *grid = gtk_grid_new();
-	GtkListStore *store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
+	GtkListStore *store = gtk_list_store_new(3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_POINTER);
 
 	GHashTableIter iter;
 	g_hash_table_iter_init(&iter, cfg->known_boards);
@@ -365,7 +407,7 @@ static GtkWidget * build_editor_for_boards(const Config *cfg, const SettingTempl
 		const KnownBoard *kb = value;
 		GtkTreeIter liter;
 		gtk_list_store_append(store, &liter);
-		gtk_list_store_set(store, &liter, 0, "<none>", 1, kb->id.board, -1);
+		gtk_list_store_set(store, &liter, 0, "<none>", 1, kb->id.board, 2, kb,-1);
 	}
 
 	GtkWidget *view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
@@ -376,6 +418,7 @@ static GtkWidget * build_editor_for_boards(const Config *cfg, const SettingTempl
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), column);
 	gtk_widget_set_hexpand(view, TRUE);
 	gtk_widget_set_vexpand(view, TRUE);
+	g_signal_connect(G_OBJECT(view), "row_activated", G_CALLBACK(evt_boards_row_activated), (gpointer) cfg);
 	gtk_grid_attach(GTK_GRID(grid), view, 0, 0, 1, 1);
 
 	return grid;
@@ -388,11 +431,11 @@ Config * config_edit(const Config *cfg, GtkWindow *parent, GuiInfo *gui)
 	GtkWidget *dlg = gtk_dialog_new_with_buttons("Preferences", parent, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
 	GtkWidget *grid = gtk_grid_new();
 
-	GtkWidget *global = build_editor_from_templates(editing, global_settings);
+	GtkWidget *global = build_editor_from_templates(editing, NULL, NULL, global_settings);
 	gtk_grid_attach(GTK_GRID(grid), global, 0, 0, 1, 1);
 
 	GtkWidget *boards = gtk_frame_new("Known boards");
-	GtkWidget *be = build_editor_for_boards(cfg, board_settings);
+	GtkWidget *be = build_editor_for_boards(cfg);
 	gtk_container_add(GTK_CONTAINER(boards), be);
 	gtk_grid_attach(GTK_GRID(grid), boards, 0, 1, 1, 1);
 
