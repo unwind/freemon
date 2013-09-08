@@ -91,6 +91,7 @@ static const char * parse_html_input(BoardId *bid, const char *input, const char
 
 bool boardid_set_from_target(BoardId *id, const char *path)
 {
+	boardid_init(id);
 	gchar fn[1024];
 	if(g_snprintf(fn, sizeof fn, "%s" G_DIR_SEPARATOR_S "SDA_INFO.HTM", path) < sizeof fn)
 	{
@@ -116,5 +117,5 @@ bool boardid_set_from_target(BoardId *id, const char *path)
 			fprintf(stderr, "**Failed to open '%s'\n", fn);
 		g_object_unref(file);
 	}
-	return false;
+	return boardid_valid(id);
 }
