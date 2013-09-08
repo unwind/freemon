@@ -24,8 +24,31 @@
 #include "action-about.h"
 #include "action-config.h"
 #include "autodetect.h"
+#include "config.h"
 
 #include "gui.h"
+
+/* ------------------------------------------------------------------- */
+
+struct GuiInfo {
+	Config		*config;
+
+	GtkAction	*action_about;
+	GtkAction	*action_config;
+
+	GSList		*available_targets;	/* From autodetect_all(). */
+	GtkWidget	*main_window;
+	GtkWidget	*toolbar;
+	GtkToolItem	*targets;
+	GtkWidget	*notebook;
+
+	GtkWidget	*binary;	/* A GtkFileChooserButton. */
+	GtkWidget	*terminal;	/* A VteTerminal. */
+	GtkWidget	*grid;
+	void		(*keyhandler)(guint32 unicode, gpointer user);
+	gpointer	keyhandler_user;
+	GtkWidget	*terminal_menu;	/* A GtkMenu. */
+};
 
 /* ------------------------------------------------------------------- */
 
@@ -183,12 +206,9 @@ static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
 	}
 }
 
-GtkWidget * gui_init(GuiInfo *gui, const char *title)
+GuiInfo * gui_init(const char *title)
 {
-	GtkWidget	*win;
-
-	if(gui == NULL)
-		return NULL;
+	GuiInfo *gui = g_malloc(sizeof *gui);
 
 	gui->config = config_init();
 
@@ -196,11 +216,11 @@ GtkWidget * gui_init(GuiInfo *gui, const char *title)
 	gui->action_config = action_config_new(gui);
 	gui->available_targets = NULL;
 
-	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gtk_window_set_title(GTK_WINDOW(win), title);
-	gtk_window_set_default_size(GTK_WINDOW(win), 640, 480);
-	gtk_container_set_border_width(GTK_CONTAINER(win), 4);
-	g_signal_connect(G_OBJECT(win), "delete_event", G_CALLBACK(evt_mainwindow_delete), NULL);
+	gui->main_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	gtk_window_set_title(GTK_WINDOW(gui->main_window), title);
+	gtk_window_set_default_size(GTK_WINDOW(gui->main_window), 640, 480);
+	gtk_container_set_border_width(GTK_CONTAINER(gui->main_window), 4);
+	g_signal_connect(G_OBJECT(gui->main_window), "delete_event", G_CALLBACK(evt_mainwindow_delete), NULL);
 
 	gui->grid = gtk_grid_new();
 	gui->toolbar = gtk_toolbar_new();
@@ -234,15 +254,20 @@ GtkWidget * gui_init(GuiInfo *gui, const char *title)
 	gui->notebook = gtk_notebook_new();
 	gtk_grid_attach(GTK_GRID(gui->grid), gui->notebook, 0, 1, 1, 1);
 
-	gtk_container_add(GTK_CONTAINER(win), gui->grid);
+	gtk_container_add(GTK_CONTAINER(gui->main_window), gui->grid);
 
 	if(config_get_autodetect_on_startup(gui->config))
 		evt_targets_refresh_clicked(NULL, gui);
 
-	return win;
+	return gui;
 }
 
 /* ------------------------------------------------------------------- */
+
+GtkWidget * gui_mainwindow_get(GuiInfo *gui)
+{
+	return gui->main_window;
+}
 
 Config * gui_config_get(GuiInfo *gui)
 {

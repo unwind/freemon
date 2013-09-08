@@ -46,14 +46,15 @@ typedef union {
 
 typedef struct {
 	SimpleType	type;
-	SimpleValue	value;
+	SimpleValue	default_value;
 	const char	*key;
 	const char	*comment;
 } SettingTemplate;
 
 #define	TMPL_REF(k)			setting_ ## k
 #define	TMPL_DEF_GROUP(k, c)		static const SettingTemplate TMPL_REF(k) = { .type = SIMPLETYPE_GROUP, .key = #k, .comment = c }
-#define	TMPL_DEF_BOOLEAN(k, v, c)	static const SettingTemplate TMPL_REF(k) = { .type = SIMPLETYPE_BOOLEAN, .value.boolean = v, .key = #k, .comment = c }
+#define	TMPL_DEF_BOOLEAN(k, v, c)	static const SettingTemplate TMPL_REF(k) = { .type = SIMPLETYPE_BOOLEAN, .default_value.boolean = v, .key = #k, .comment = c }
+#define	TMPL_DEF_STRING(k, v, c)	static const SettingTemplate TMPL_REF(k) = { .type = SIMPLETYPE_STRING, .default_value.string = v, .key = #k, .comment = c }
 #define TMPL_KEY(k)			TMPL_REF(k).key
 
 TMPL_DEF_GROUP(global, "Global settings");
@@ -64,7 +65,19 @@ static const SettingTemplate *global_settings[] = {
 	&TMPL_REF(global),
 	&TMPL_REF(autodetect_on_startup),
 	&TMPL_REF(connect_first_on_first_autodetect),
-	NULL,
+	NULL
+};
+
+TMPL_DEF_GROUP(board, "Per-board settings");
+TMPL_DEF_STRING(board_name, "", "User-friendly name for this board.");
+TMPL_DEF_BOOLEAN(reset_tty_on_upload, false, "Reset (clear) the terminal window after uploading new code to the board?");
+TMPL_DEF_BOOLEAN(upload_on_change, false, "Monitor the selected binary for changes, and upload new files automatically?");
+
+static const SettingTemplate *board_settings[] = {
+	&TMPL_REF(board_name),
+	&TMPL_REF(reset_tty_on_upload),
+	&TMPL_REF(upload_on_change),
+	NULL
 };
 
 /* ------------------------------------------------------------------- */
@@ -73,6 +86,7 @@ struct Config
 {
 	GHashTable	*meta;		/* Maps setting keys back to SettingTemplates, for meta info. */
 	GKeyFile	*keyfile;
+	GArray		*boards;	/* Array of known boards, to which settings are associated. */
 };
 
 /* ------------------------------------------------------------------- */
@@ -90,13 +104,13 @@ static void config_keyfile_add_from_templates(Config *cfg, const SettingTemplate
 			group = here->key;
 			continue;	/* Avoid hashing the group. */
 		case SIMPLETYPE_BOOLEAN:
-			g_key_file_set_boolean(kf, group, here->key, here->value.boolean);
+			g_key_file_set_boolean(kf, group, here->key, here->default_value.boolean);
 			break;
 		case SIMPLETYPE_INTEGER:
-			g_key_file_set_integer(kf, group, here->key, here->value.integer);
+			g_key_file_set_integer(kf, group, here->key, here->default_value.integer);
 			break;
 		case SIMPLETYPE_STRING:
-			g_key_file_set_string(kf, group, here->key, here->value.string);
+			g_key_file_set_string(kf, group, here->key, here->default_value.string);
 			break;
 		}
 		g_hash_table_insert(cfg->meta, (gpointer) here->key, (gpointer) here);
@@ -311,7 +325,7 @@ static GtkWidget * build_editor_from_templates(Config *cfg, const SettingTemplat
 	return frame;
 }
 
-Config * config_edit(const Config *cfg, GtkWindow *parent)
+Config * config_edit(const Config *cfg, GtkWindow *parent, GuiInfo *gui)
 {
 	Config *editing = config_copy(cfg);
 
