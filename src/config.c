@@ -227,6 +227,24 @@ static Config * config_new(void)
 	return cfg;
 }
 
+/* Initialize hash of known boards by iterating over board-sounding groups in the keyfile. */
+static void config_init_boards_from_keyfile(Config *cfg)
+{
+	gchar **groups = g_key_file_get_groups(cfg->keyfile, NULL);
+	for(int i = 0; groups[i] != NULL; ++i)
+	{
+		BoardId id;
+
+		if(boardid_from_keyfile_group(&id, groups[i]))
+		{
+			KnownBoard *kb = g_malloc(sizeof *kb);
+			kb->id = id;
+			g_hash_table_insert(cfg->known_boards, &kb->id, kb);
+		}
+	}
+	g_strfreev(groups);
+}
+
 Config * config_init(void)
 {
 	Config *cfg = config_new();
@@ -238,6 +256,8 @@ Config * config_init(void)
 		config_keyfile_set_defaults(cfg);
 		config_keyfile_save(cfg);
 	}
+	else
+		config_init_boards_from_keyfile(cfg);
 	return cfg;
 }
 
@@ -409,7 +429,7 @@ void config_update_boards(Config *cfg, const GSList *autodetected)
 		{
 			kb = g_malloc(sizeof *kb);
 			kb->id = at->id;
-			if(boardid_keyfile_group(&kb->id, kb->group, sizeof kb->group))
+			if(boardid_to_keyfile_group(&kb->id, kb->group, sizeof kb->group))
 			{
 				g_hash_table_insert(cfg->known_boards, &kb->id, kb);
 				board_to_keyfile(cfg, board_settings, kb);

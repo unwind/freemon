@@ -41,6 +41,7 @@ gboolean	boardid_equal(gconstpointer a, gconstpointer b);
 
 bool		boardid_set_from_target(BoardId *id, const char *path);
 
-bool		boardid_keyfile_group(const BoardId *id, char *buf, size_t buf_max);
+bool		boardid_to_keyfile_group(const BoardId *id, char *group, size_t group_max);
+bool		boardid_from_keyfile_group(BoardId *id, const char *group);
 
 #endif		/* BOARDID_H_ */

@@ -134,8 +134,30 @@ bool boardid_set_from_target(BoardId *id, const char *path)
 
 /* ------------------------------------------------------------------- */
 
-bool boardid_keyfile_group(const BoardId *id, char *buf, size_t buf_max)
+bool boardid_to_keyfile_group(const BoardId *id, char *group, size_t group_max)
 {
-	return g_snprintf(buf, buf_max, "board-%08x.%08x.%08x.%08x",
-		id->tuid[0], id->tuid[1], id->tuid[2], id->tuid[3]) < buf_max;
+	return g_snprintf(group, group_max, "board(%s,%08x.%08x.%08x.%08x)",
+		id->board,
+		id->tuid[0], id->tuid[1], id->tuid[2], id->tuid[3]) < group_max;
+}
+
+bool boardid_from_keyfile_group(BoardId *id, const char *group)
+{
+	if(strncmp(group, "board(", 6) == 0)
+	{
+		const char *board = group + 6;
+		const char *comma = strrchr(group, ',');
+		if(comma != NULL)
+		{
+			const size_t board_len = comma - board;
+			if(board_len <= (sizeof id->board - 1))
+			{
+				memcpy(id->board, board, board_len);
+				id->board[board_len] = '\0';
+				if(sscanf(comma + 1, "%x.%x.%x.%x", &id->tuid[0], &id->tuid[1], &id->tuid[2], &id->tuid[3]) == 4)
+					return true;
+			}
+		}
+	}
+	return false;
 }
