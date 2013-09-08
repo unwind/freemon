@@ -36,7 +36,8 @@ typedef struct {
 
 void	boardid_init(BoardId *id);
 bool	boardid_valid(const BoardId *id);
-bool	boardid_equal(const BoardId *id1, const BoardId *id2);
+guint	boardid_hash(gconstpointer key);
+gboolean	boardid_equal(gconstpointer a, gconstpointer b);
 
 bool	boardid_set_from_target(BoardId *id, const char *path);
 

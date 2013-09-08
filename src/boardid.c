@@ -40,13 +40,25 @@ bool boardid_valid(const BoardId *id)
 	return !boardid_equal(id, &zero);
 }
 
-bool boardid_equal(const BoardId *id1, const BoardId *id2)
+guint boardid_hash(gconstpointer key)
 {
+	const BoardId *id = key;
+	const guint h1 = g_int_hash(&id->tuid[0]);
+	const guint h2 = g_int_hash(&id->tuid[1]);
+	const guint h3 = g_int_hash(&id->tuid[2]);
+	const guint h4 = g_int_hash(&id->tuid[3]);
+
+	return h1 ^ h2 ^ h3 ^ h4;
+}
+
+gboolean boardid_equal(gconstpointer a, gconstpointer b)
+{
+	const BoardId *id1 = a, *id2 = b;
 	if(strcmp(id1->board, id2->board) != 0)
-		return false;
+		return FALSE;
 	if(memcmp(id1->tuid, id2->tuid, sizeof id1->tuid) != 0)
-		return false;
-	return true;
+		return FALSE;
+	return TRUE;
 }
 
 /* ------------------------------------------------------------------- */
