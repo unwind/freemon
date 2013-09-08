@@ -292,16 +292,16 @@ void config_delete(Config *cfg)
 
 /* ------------------------------------------------------------------- */
 
-static void widget_data_set(GtkWidget *wid, const char *group, const SettingTemplate *template)
+static void object_data_set(GObject *obj, const char *group, const SettingTemplate *template)
 {
-	g_object_set_data(G_OBJECT(wid), "group", (gpointer) group);
-	g_object_set_data(G_OBJECT(wid), "template", (gpointer) template);
+	g_object_set_data(obj, "group", (gpointer) group);
+	g_object_set_data(obj, "template", (gpointer) template);
 }
 
-static void widget_data_get(GtkWidget *wid, const char **group, const SettingTemplate **template)
+static void object_data_get(GObject *obj, const char **group, const SettingTemplate **template)
 {
-	*group = g_object_get_data(G_OBJECT(wid), "group");
-	*template = g_object_get_data(G_OBJECT(wid), "template");
+	*group = g_object_get_data(obj, "group");
+	*template = g_object_get_data(obj, "template");
 }
 
 static void evt_check_button_toggled(GtkWidget *wid, gpointer user)
@@ -310,17 +310,48 @@ static void evt_check_button_toggled(GtkWidget *wid, gpointer user)
 	const SettingTemplate *template;
 	Config *cfg = user;
 
-	widget_data_get(wid, &group, &template);
+	object_data_get(G_OBJECT(wid), &group, &template);
 	const gboolean value = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wid));
 	g_key_file_set_boolean(cfg->keyfile, group, template->key, value);
 }
 
 static void init_check_button(GtkWidget *wid, Config *cfg, const char *group, const SettingTemplate *template)
 {
-	widget_data_set(wid, group, template);
+	object_data_set(G_OBJECT(wid), group, template);
 	const gboolean value = g_key_file_get_boolean(cfg->keyfile, group, template->key, NULL);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wid), value);
 	g_signal_connect(G_OBJECT(wid), "toggled", G_CALLBACK(evt_check_button_toggled), cfg);
+}
+
+static void evt_string_edited(GObject *obj, Config *cfg)
+{
+	const char *group;
+	const SettingTemplate *template;
+
+	object_data_get(obj, &group, &template);
+	const gchar *text = gtk_entry_buffer_get_text(GTK_ENTRY_BUFFER(obj));
+	g_key_file_set_string(cfg->keyfile, group, template->key, text);
+}
+
+static void evt_string_inserted_text(GObject *obj, guint position, gchar *chars, guint n_chars, gpointer user)
+{
+	evt_string_edited(obj, user);
+}
+
+static void evt_string_deleted_text(GObject *obj, guint position, guint n_chars, gpointer user)
+{
+	evt_string_edited(obj, user);
+}
+
+static void init_entry(GtkWidget *wid, Config *cfg, const char *group, const SettingTemplate *template)
+{
+	gchar *s = g_key_file_get_string(cfg->keyfile, group, template->key, NULL);
+	gtk_entry_set_text(GTK_ENTRY(wid), s);
+	g_free(s);
+	GtkEntryBuffer *buf = gtk_entry_get_buffer(GTK_ENTRY(wid));
+	object_data_set(G_OBJECT(buf), group, template);
+	g_signal_connect(G_OBJECT(buf), "inserted_text", G_CALLBACK(evt_string_inserted_text), cfg);
+	g_signal_connect(G_OBJECT(buf), "deleted_text", G_CALLBACK(evt_string_deleted_text), cfg);
 }
 
 static GtkWidget * build_editor_from_templates(Config *cfg, const char *group, const char *group_comment, const SettingTemplate **templates)
@@ -354,6 +385,7 @@ static GtkWidget * build_editor_from_templates(Config *cfg, const char *group, c
 				GtkWidget *label = gtk_label_new(here->comment);
 				gtk_grid_attach(GTK_GRID(wid), label, 0, 0, 1, 1);
 				GtkWidget *entry = gtk_entry_new();
+				init_entry(entry, cfg, group, here);
 				gtk_widget_set_hexpand(entry, TRUE);
 				gtk_grid_attach(GTK_GRID(wid), entry, 1, 0, 1, 1);
 			}
