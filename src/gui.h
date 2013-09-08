@@ -40,7 +40,6 @@ typedef struct {
 	GtkWidget	*notebook;
 
 	GtkWidget	*binary;	/* A GtkFileChooserButton. */
-	GtkWidget	*target;	/* Another GtkFileChooserButton. */
 	GtkWidget	*terminal;	/* A VteTerminal. */
 	GtkWidget	*grid;
 	void		(*keyhandler)(guint32 unicode, gpointer user);
