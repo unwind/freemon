@@ -332,14 +332,51 @@ static GtkWidget * build_editor_from_templates(Config *cfg, const SettingTemplat
 	return frame;
 }
 
+static GtkWidget * build_editor_for_boards(const Config *cfg, const SettingTemplate **templates)
+{
+	GtkWidget *grid = gtk_grid_new();
+	GtkListStore *store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
+
+	GHashTableIter iter;
+	g_hash_table_iter_init(&iter, cfg->known_boards);
+	gpointer key, value;
+	while(g_hash_table_iter_next(&iter, &key, &value))
+	{
+		const KnownBoard *kb = value;
+		GtkTreeIter liter;
+		gtk_list_store_append(store, &liter);
+		gtk_list_store_set(store, &liter, 0, "<none>", 1, kb->id.board, -1);
+	}
+
+	GtkWidget *view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
+	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
+	GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes("Name", renderer, "text", 0, NULL);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(view), column);
+	column = gtk_tree_view_column_new_with_attributes("Board Model", renderer, "text", 1, NULL);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(view), column);
+	gtk_widget_set_hexpand(view, TRUE);
+	gtk_widget_set_vexpand(view, TRUE);
+	gtk_grid_attach(GTK_GRID(grid), view, 0, 0, 1, 1);
+
+	return grid;
+}
+
 Config * config_edit(const Config *cfg, GtkWindow *parent, GuiInfo *gui)
 {
 	Config *editing = config_copy(cfg);
 
 	GtkWidget *dlg = gtk_dialog_new_with_buttons("Preferences", parent, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+	GtkWidget *grid = gtk_grid_new();
 
 	GtkWidget *global = build_editor_from_templates(editing, global_settings);
-	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dlg))), global);
+	gtk_grid_attach(GTK_GRID(grid), global, 0, 0, 1, 1);
+
+	GtkWidget *boards = gtk_frame_new("Known boards");
+	GtkWidget *be = build_editor_for_boards(cfg, board_settings);
+	gtk_container_add(GTK_CONTAINER(boards), be);
+	gtk_grid_attach(GTK_GRID(grid), boards, 0, 1, 1, 1);
+
+	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dlg))), grid);
 
 	gtk_widget_show_all(dlg);
 	const gint response = gtk_dialog_run(GTK_DIALOG(dlg));
