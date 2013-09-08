@@ -34,11 +34,13 @@ typedef struct {
 
 /* ------------------------------------------------------------------- */
 
-void	boardid_init(BoardId *id);
-bool	boardid_valid(const BoardId *id);
-guint	boardid_hash(gconstpointer key);
+void		boardid_init(BoardId *id);
+bool		boardid_valid(const BoardId *id);
+guint		boardid_hash(gconstpointer key);
 gboolean	boardid_equal(gconstpointer a, gconstpointer b);
 
-bool	boardid_set_from_target(BoardId *id, const char *path);
+bool		boardid_set_from_target(BoardId *id, const char *path);
+
+bool		boardid_keyfile_group(const BoardId *id, char *buf, size_t buf_max);
 
 #endif		/* BOARDID_H_ */

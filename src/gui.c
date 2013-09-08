@@ -180,6 +180,8 @@ static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
 	{
 		static bool autoconnected = false;
 
+		config_update_boards(gui->config, targets);
+
 		for(GSList *iter = targets; iter != NULL; iter = g_slist_next(iter))
 		{
 			const AutodetectedTarget *at = iter->data;

@@ -131,3 +131,11 @@ bool boardid_set_from_target(BoardId *id, const char *path)
 	}
 	return boardid_valid(id);
 }
+
+/* ------------------------------------------------------------------- */
+
+bool boardid_keyfile_group(const BoardId *id, char *buf, size_t buf_max)
+{
+	return g_snprintf(buf, buf_max, "board-%08x.%08x.%08x.%08x",
+		id->tuid[0], id->tuid[1], id->tuid[2], id->tuid[3]) < buf_max;
+}

@@ -25,6 +25,7 @@
 #include <gio/gio.h>
 #include <gtk/gtk.h>
 
+#include "autodetect.h"
 #include "config.h"
 
 /* ------------------------------------------------------------------- */
@@ -82,14 +83,37 @@ static const SettingTemplate *board_settings[] = {
 
 /* ------------------------------------------------------------------- */
 
+typedef struct {
+	BoardId	id;
+	char	group[64];
+} KnownBoard;
+
 struct Config
 {
-	GHashTable	*meta;		/* Maps setting keys back to SettingTemplates, for meta info. */
 	GKeyFile	*keyfile;
-	GArray		*boards;	/* Array of known boards, to which settings are associated. */
+	GHashTable	*known_boards;	/* Hashing BoardIds to KnownBoard instances. */
 };
 
 /* ------------------------------------------------------------------- */
+
+static const char * keyfile_add_from_template(GKeyFile *kf, const char *group, const SettingTemplate *template)
+{
+	switch(template->type)
+	{
+	case SIMPLETYPE_GROUP:
+		return template->key;
+	case SIMPLETYPE_BOOLEAN:
+		g_key_file_set_boolean(kf, group, template->key, template->default_value.boolean);
+		break;
+	case SIMPLETYPE_INTEGER:
+		g_key_file_set_integer(kf, group, template->key, template->default_value.integer);
+		break;
+	case SIMPLETYPE_STRING:
+		g_key_file_set_string(kf, group, template->key, template->default_value.string);
+		break;
+	}
+	return group;
+}
 
 static void config_keyfile_add_from_templates(Config *cfg, const SettingTemplate **templates)
 {
@@ -98,22 +122,7 @@ static void config_keyfile_add_from_templates(Config *cfg, const SettingTemplate
 
 	for(const SettingTemplate *here = *templates; here != NULL; here = *++templates)
 	{
-		switch(here->type)
-		{
-		case SIMPLETYPE_GROUP:
-			group = here->key;
-			continue;	/* Avoid hashing the group. */
-		case SIMPLETYPE_BOOLEAN:
-			g_key_file_set_boolean(kf, group, here->key, here->default_value.boolean);
-			break;
-		case SIMPLETYPE_INTEGER:
-			g_key_file_set_integer(kf, group, here->key, here->default_value.integer);
-			break;
-		case SIMPLETYPE_STRING:
-			g_key_file_set_string(kf, group, here->key, here->default_value.string);
-			break;
-		}
-		g_hash_table_insert(cfg->meta, (gpointer) here->key, (gpointer) here);
+		group = keyfile_add_from_template(kf, group, here);
 	}
 }
 
@@ -150,7 +159,6 @@ static void config_keyfile_copy_with_templates(Config *cfg, const Config *src, c
 		default:
 			break;
 		}
-		g_hash_table_insert(cfg->meta, (gpointer) here->key, (gpointer) here);
 	}
 }
 
@@ -213,8 +221,8 @@ static Config * config_new(void)
 {
 	Config *cfg = g_malloc(sizeof *cfg);
 
-	cfg->meta = g_hash_table_new(g_str_hash, g_str_equal);
 	cfg->keyfile = NULL;
+	cfg->known_boards = g_hash_table_new(boardid_hash, boardid_equal);
 
 	return cfg;
 }
@@ -258,7 +266,6 @@ void config_delete(Config *cfg)
 	if(cfg != NULL)
 	{
 		g_key_file_free(cfg->keyfile);
-		g_hash_table_destroy(cfg->meta);
 		g_free(cfg);
 	}
 }
@@ -344,6 +351,36 @@ Config * config_edit(const Config *cfg, GtkWindow *parent, GuiInfo *gui)
 		editing = NULL;
 	}
 	return editing;
+}
+
+/* ------------------------------------------------------------------- */
+
+static bool board_to_keyfile(Config *cfg, const SettingTemplate **templates, const KnownBoard *kb)
+{
+	for(const SettingTemplate *here = *templates; here != NULL; here = *++templates)
+		keyfile_add_from_template(cfg->keyfile, kb->group, here);
+	return true;
+}
+
+void config_update_boards(Config *cfg, const GSList *autodetected)
+{
+	for(; autodetected != NULL; autodetected = g_slist_next(autodetected))
+	{
+		const AutodetectedTarget *at = autodetected->data;
+		KnownBoard *kb = g_hash_table_lookup(cfg->known_boards, &at->id);
+		if(kb == NULL)
+		{
+			kb = g_malloc(sizeof *kb);
+			kb->id = at->id;
+			if(boardid_keyfile_group(&kb->id, kb->group, sizeof kb->group))
+			{
+				g_hash_table_insert(cfg->known_boards, &kb->id, kb);
+				board_to_keyfile(cfg, board_settings, kb);
+			}
+			else
+				g_error("Failed to build GKeyFile group name for BoardId");
+		}
+	}
 }
 
 /* ------------------------------------------------------------------- */
