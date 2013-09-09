@@ -91,5 +91,5 @@ Click the Upload button to copy the selected file to the FRDM-KL25Z board, which
 
 
 #Feedback#
-Please contact the author, Emil Brink (by e-mailing &lt;emil@obsession.se&gt;) regarding any bugs, comments, or thoughts about Gitbrowser.
+Please contact the author, Emil Brink (by e-mailing &lt;emil@obsession.se&gt;) regarding any bugs, comments, or thoughts about Freemon.
 Enjoy.
