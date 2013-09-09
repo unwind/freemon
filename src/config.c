@@ -263,6 +263,30 @@ Config * config_init(void)
 
 /* ------------------------------------------------------------------- */
 
+static void board_to_keyfile(Config *cfg, const SettingTemplate **templates, const KnownBoard *kb)
+{
+	for(const SettingTemplate *here = *templates; here != NULL; here = *++templates)
+		keyfile_add_from_template(cfg->keyfile, kb->group, here);
+}
+
+static void cb_known_board_copy(gpointer key, gpointer value, gpointer user)
+{
+	Config *cfg = user;
+	KnownBoard *kb_copy = g_malloc(sizeof *kb_copy);
+	*kb_copy = *(KnownBoard *) value;
+	if(boardid_to_keyfile_group(&kb_copy->id, kb_copy->group, sizeof kb_copy->group))
+	{
+		g_hash_table_insert(cfg->known_boards, &kb_copy->id, kb_copy);
+		board_to_keyfile(cfg, board_settings, kb_copy);
+	}
+}
+
+static void config_known_boards_copy(Config *cfg, const Config *original)
+{
+	cfg->known_boards = g_hash_table_new(boardid_hash, boardid_equal);
+	g_hash_table_foreach(original->known_boards, cb_known_board_copy, cfg);
+}
+
 Config * config_copy(const Config *cfg)
 {
 	if(cfg == NULL)
@@ -270,8 +294,8 @@ Config * config_copy(const Config *cfg)
 
 	Config *copy = config_new();
 	copy->keyfile = g_key_file_new();
-
 	config_keyfile_copy_with_templates(copy, cfg, global_settings);
+	config_known_boards_copy(copy, cfg);
 
 	return copy;
 }
@@ -281,10 +305,17 @@ bool config_save(const Config *cfg)
 	return config_keyfile_save(cfg);
 }
 
+static void cb_known_board_free(gpointer key, gpointer value, gpointer user)
+{
+	g_free(value);
+}
+
 void config_delete(Config *cfg)
 {
 	if(cfg != NULL)
 	{
+		g_hash_table_foreach(cfg->known_boards, cb_known_board_free, NULL);
+		g_hash_table_destroy(cfg->known_boards);
 		g_key_file_free(cfg->keyfile);
 		g_free(cfg);
 	}
@@ -467,7 +498,7 @@ Config * config_edit(const Config *cfg, GtkWindow *parent, GuiInfo *gui)
 	gtk_grid_attach(GTK_GRID(grid), global, 0, 0, 1, 1);
 
 	GtkWidget *boards = gtk_frame_new("Known boards");
-	GtkWidget *be = build_editor_for_boards(cfg);
+	GtkWidget *be = build_editor_for_boards(editing);
 	gtk_container_add(GTK_CONTAINER(boards), be);
 	gtk_grid_attach(GTK_GRID(grid), boards, 0, 1, 1, 1);
 
@@ -486,13 +517,6 @@ Config * config_edit(const Config *cfg, GtkWindow *parent, GuiInfo *gui)
 }
 
 /* ------------------------------------------------------------------- */
-
-static bool board_to_keyfile(Config *cfg, const SettingTemplate **templates, const KnownBoard *kb)
-{
-	for(const SettingTemplate *here = *templates; here != NULL; here = *++templates)
-		keyfile_add_from_template(cfg->keyfile, kb->group, here);
-	return true;
-}
 
 void config_update_boards(Config *cfg, const GSList *autodetected)
 {
