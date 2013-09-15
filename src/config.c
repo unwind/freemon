@@ -269,22 +269,35 @@ static void board_to_keyfile(Config *cfg, const SettingTemplate **templates, con
 		keyfile_add_from_template(cfg->keyfile, kb->group, here);
 }
 
+typedef struct {
+	Config		*cfg;
+	const Config	*original;
+} KnownBoardCopyInfo;
+
 static void cb_known_board_copy(gpointer key, gpointer value, gpointer user)
 {
-	Config *cfg = user;
+	const KnownBoardCopyInfo *info = user;
 	KnownBoard *kb_copy = g_malloc(sizeof *kb_copy);
 	*kb_copy = *(KnownBoard *) value;
 	if(boardid_to_keyfile_group(&kb_copy->id, kb_copy->group, sizeof kb_copy->group))
 	{
-		g_hash_table_insert(cfg->known_boards, &kb_copy->id, kb_copy);
-		board_to_keyfile(cfg, board_settings, kb_copy);
+		g_hash_table_insert(info->cfg->known_boards, &kb_copy->id, kb_copy);
+		board_to_keyfile(info->cfg, board_settings, kb_copy);
+		/* Now that the settings are copied, do it again to get the actual values. */
+		const SettingTemplate group = { .type = SIMPLETYPE_GROUP, .key = kb_copy->group };
+		const SettingTemplate *to_copy[(sizeof board_settings / sizeof *board_settings) + 1] = {
+		[0] = &group
+		};
+		for(size_t i = 0; i < sizeof board_settings / sizeof *board_settings; ++i)
+			to_copy[1 + i] = board_settings[i];
+		config_keyfile_copy_with_templates(info->cfg, info->original, to_copy);
 	}
 }
 
 static void config_known_boards_copy(Config *cfg, const Config *original)
 {
-	cfg->known_boards = g_hash_table_new(boardid_hash, boardid_equal);
-	g_hash_table_foreach(original->known_boards, cb_known_board_copy, cfg);
+	KnownBoardCopyInfo info = { .cfg = cfg, .original = original };	/* We can only pass one argument to foreach(). */
+	g_hash_table_foreach(original->known_boards, cb_known_board_copy, &info);
 }
 
 Config * config_copy(const Config *cfg)
@@ -470,7 +483,13 @@ static GtkWidget * build_editor_for_boards(const Config *cfg)
 		const KnownBoard *kb = value;
 		GtkTreeIter liter;
 		gtk_list_store_append(store, &liter);
-		gtk_list_store_set(store, &liter, 0, "<none>", 1, kb->id.board, 2, kb,-1);
+		char group[64];
+		if(boardid_to_keyfile_group(&kb->id, group, sizeof group))
+		{
+			gchar *s = g_key_file_get_string(cfg->keyfile, group, TMPL_REF(board_name).key, NULL);
+			gtk_list_store_set(store, &liter, 0, s, 1, kb->id.board, 2, kb,-1);
+			g_free(s);
+		}
 	}
 
 	GtkWidget *view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
