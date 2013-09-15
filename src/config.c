@@ -283,10 +283,13 @@ static void cb_known_board_copy(gpointer key, gpointer value, gpointer user)
 	{
 		g_hash_table_insert(info->cfg->known_boards, &kb_copy->id, kb_copy);
 		board_to_keyfile(info->cfg, board_settings, kb_copy);
-		/* Now that the settings are copied, do it again to get the actual values. */
-		const SettingTemplate group = { .type = SIMPLETYPE_GROUP, .key = kb_copy->group };
+		/* Now that the settings are copied, do it again to get the actual values. 
+		 * For this, we need to call config_keyfile_copy_with_templates() which
+		 * means we have to have an "ordinary-looking" (grouped) template vector.
+		 * So, let's conjure one, temporarily.
+		*/
 		const SettingTemplate *to_copy[(sizeof board_settings / sizeof *board_settings) + 1] = {
-		[0] = &group
+			[0] = &(const SettingTemplate) { .type = SIMPLETYPE_GROUP, .key = kb_copy->group },
 		};
 		for(size_t i = 0; i < sizeof board_settings / sizeof *board_settings; ++i)
 			to_copy[1 + i] = board_settings[i];
