@@ -40,13 +40,25 @@ bool boardid_valid(const BoardId *id)
 	return !boardid_equal(id, &zero);
 }
 
-bool boardid_equal(const BoardId *id1, const BoardId *id2)
+guint boardid_hash(gconstpointer key)
 {
+	const BoardId *id = key;
+	const guint h1 = g_int_hash(&id->tuid[0]);
+	const guint h2 = g_int_hash(&id->tuid[1]);
+	const guint h3 = g_int_hash(&id->tuid[2]);
+	const guint h4 = g_int_hash(&id->tuid[3]);
+
+	return h1 ^ h2 ^ h3 ^ h4;
+}
+
+gboolean boardid_equal(gconstpointer a, gconstpointer b)
+{
+	const BoardId *id1 = a, *id2 = b;
 	if(strcmp(id1->board, id2->board) != 0)
-		return false;
+		return FALSE;
 	if(memcmp(id1->tuid, id2->tuid, sizeof id1->tuid) != 0)
-		return false;
-	return true;
+		return FALSE;
+	return TRUE;
 }
 
 /* ------------------------------------------------------------------- */
@@ -118,4 +130,34 @@ bool boardid_set_from_target(BoardId *id, const char *path)
 		g_object_unref(file);
 	}
 	return boardid_valid(id);
+}
+
+/* ------------------------------------------------------------------- */
+
+bool boardid_to_keyfile_group(const BoardId *id, char *group, size_t group_max)
+{
+	return g_snprintf(group, group_max, "board(%s,%08x.%08x.%08x.%08x)",
+		id->board,
+		id->tuid[0], id->tuid[1], id->tuid[2], id->tuid[3]) < group_max;
+}
+
+bool boardid_from_keyfile_group(BoardId *id, const char *group)
+{
+	if(strncmp(group, "board(", 6) == 0)
+	{
+		const char *board = group + 6;
+		const char *comma = strrchr(group, ',');
+		if(comma != NULL)
+		{
+			const size_t board_len = comma - board;
+			if(board_len <= (sizeof id->board - 1))
+			{
+				memcpy(id->board, board, board_len);
+				id->board[board_len] = '\0';
+				if(sscanf(comma + 1, "%x.%x.%x.%x", &id->tuid[0], &id->tuid[1], &id->tuid[2], &id->tuid[3]) == 4)
+					return true;
+			}
+		}
+	}
+	return false;
 }

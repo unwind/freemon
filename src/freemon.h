@@ -1,5 +1,5 @@
 /*
- * Freemon: persistent configuration module.
+ * Freemon: global type declarations.
  *
  * Copyright 2013 Emil Brink <emil@obsession.se>.
  * 
@@ -19,27 +19,10 @@
  * along with Freemon.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#if !defined CONFIG_H_
-#define	CONFIG_H_
+#if !defined FREEMON_H_
+#define	FREEMON_H_
 
-#include <stdbool.h>
+typedef struct Config	Config;
+typedef struct GuiInfo	GuiInfo;
 
-#include "freemon.h"
-#include "gui.h"
-
-Config *	config_init(void);
-
-Config *	config_copy(const Config *old);
-
-bool		config_save(const Config *cfg);
-
-void		config_delete(Config *cfg);
-
-Config *	config_edit(const Config *cfg, GtkWindow *parent, GuiInfo *gui);
-
-void		config_update_boards(Config *cfg, const GSList *autodetected);
-
-bool		config_get_autodetect_on_startup(const Config *cfg);
-bool		config_get_autoconnect_once(const Config *cfg);
-
-#endif		/* CONFIG_H_ */
+#endif		/* FREEMON_H_ */

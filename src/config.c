@@ -25,6 +25,7 @@
 #include <gio/gio.h>
 #include <gtk/gtk.h>
 
+#include "autodetect.h"
 #include "config.h"
 
 /* ------------------------------------------------------------------- */
@@ -46,14 +47,15 @@ typedef union {
 
 typedef struct {
 	SimpleType	type;
-	SimpleValue	value;
+	SimpleValue	default_value;
 	const char	*key;
 	const char	*comment;
 } SettingTemplate;
 
 #define	TMPL_REF(k)			setting_ ## k
 #define	TMPL_DEF_GROUP(k, c)		static const SettingTemplate TMPL_REF(k) = { .type = SIMPLETYPE_GROUP, .key = #k, .comment = c }
-#define	TMPL_DEF_BOOLEAN(k, v, c)	static const SettingTemplate TMPL_REF(k) = { .type = SIMPLETYPE_BOOLEAN, .value.boolean = v, .key = #k, .comment = c }
+#define	TMPL_DEF_BOOLEAN(k, v, c)	static const SettingTemplate TMPL_REF(k) = { .type = SIMPLETYPE_BOOLEAN, .default_value.boolean = v, .key = #k, .comment = c }
+#define	TMPL_DEF_STRING(k, v, c)	static const SettingTemplate TMPL_REF(k) = { .type = SIMPLETYPE_STRING, .default_value.string = v, .key = #k, .comment = c }
 #define TMPL_KEY(k)			TMPL_REF(k).key
 
 TMPL_DEF_GROUP(global, "Global settings");
@@ -64,18 +66,54 @@ static const SettingTemplate *global_settings[] = {
 	&TMPL_REF(global),
 	&TMPL_REF(autodetect_on_startup),
 	&TMPL_REF(connect_first_on_first_autodetect),
-	NULL,
+	NULL
+};
+
+TMPL_DEF_GROUP(board, "Per-board settings");
+TMPL_DEF_STRING(board_name, "", "User-friendly name for this board");
+TMPL_DEF_BOOLEAN(reset_tty_on_upload, false, "Reset (clear) the terminal window after uploading new code to the board?");
+TMPL_DEF_BOOLEAN(upload_on_change, false, "Monitor the selected binary for changes, and upload new files automatically?");
+
+static const SettingTemplate *board_settings[] = {
+	&TMPL_REF(board_name),
+	&TMPL_REF(reset_tty_on_upload),
+	&TMPL_REF(upload_on_change),
+	NULL
 };
 
 /* ------------------------------------------------------------------- */
+
+typedef struct {
+	BoardId	id;
+	char	group[64];
+} KnownBoard;
 
 struct Config
 {
-	GHashTable	*meta;		/* Maps setting keys back to SettingTemplates, for meta info. */
 	GKeyFile	*keyfile;
+	GHashTable	*known_boards;	/* Hashing BoardIds to KnownBoard instances. */
 };
 
 /* ------------------------------------------------------------------- */
+
+static const char * keyfile_add_from_template(GKeyFile *kf, const char *group, const SettingTemplate *template)
+{
+	switch(template->type)
+	{
+	case SIMPLETYPE_GROUP:
+		return template->key;
+	case SIMPLETYPE_BOOLEAN:
+		g_key_file_set_boolean(kf, group, template->key, template->default_value.boolean);
+		break;
+	case SIMPLETYPE_INTEGER:
+		g_key_file_set_integer(kf, group, template->key, template->default_value.integer);
+		break;
+	case SIMPLETYPE_STRING:
+		g_key_file_set_string(kf, group, template->key, template->default_value.string);
+		break;
+	}
+	return group;
+}
 
 static void config_keyfile_add_from_templates(Config *cfg, const SettingTemplate **templates)
 {
@@ -84,22 +122,7 @@ static void config_keyfile_add_from_templates(Config *cfg, const SettingTemplate
 
 	for(const SettingTemplate *here = *templates; here != NULL; here = *++templates)
 	{
-		switch(here->type)
-		{
-		case SIMPLETYPE_GROUP:
-			group = here->key;
-			continue;	/* Avoid hashing the group. */
-		case SIMPLETYPE_BOOLEAN:
-			g_key_file_set_boolean(kf, group, here->key, here->value.boolean);
-			break;
-		case SIMPLETYPE_INTEGER:
-			g_key_file_set_integer(kf, group, here->key, here->value.integer);
-			break;
-		case SIMPLETYPE_STRING:
-			g_key_file_set_string(kf, group, here->key, here->value.string);
-			break;
-		}
-		g_hash_table_insert(cfg->meta, (gpointer) here->key, (gpointer) here);
+		group = keyfile_add_from_template(kf, group, here);
 	}
 }
 
@@ -136,7 +159,6 @@ static void config_keyfile_copy_with_templates(Config *cfg, const Config *src, c
 		default:
 			break;
 		}
-		g_hash_table_insert(cfg->meta, (gpointer) here->key, (gpointer) here);
 	}
 }
 
@@ -189,9 +211,8 @@ static bool config_keyfile_save(const Config *cfg)
 		GError *error = NULL;
 		ok = g_file_replace_contents(file, data, length, NULL, FALSE, G_FILE_CREATE_NONE, NULL, NULL, &error);
 		g_object_unref(G_OBJECT(file));
+		g_free(data);
 	}
-	g_free(data);
-
 	return ok;
 }
 
@@ -199,10 +220,29 @@ static Config * config_new(void)
 {
 	Config *cfg = g_malloc(sizeof *cfg);
 
-	cfg->meta = g_hash_table_new(g_str_hash, g_str_equal);
 	cfg->keyfile = NULL;
+	cfg->known_boards = g_hash_table_new(boardid_hash, boardid_equal);
 
 	return cfg;
+}
+
+/* Initialize hash of known boards by iterating over board-sounding groups in the keyfile. */
+static void config_init_boards_from_keyfile(Config *cfg)
+{
+	gchar **groups = g_key_file_get_groups(cfg->keyfile, NULL);
+	for(int i = 0; groups[i] != NULL; ++i)
+	{
+		BoardId id;
+
+		if(boardid_from_keyfile_group(&id, groups[i]))
+		{
+			KnownBoard *kb = g_malloc(sizeof *kb);
+			kb->id = id;
+			g_strlcpy(kb->group, groups[i], sizeof kb->group);
+			g_hash_table_insert(cfg->known_boards, &kb->id, kb);
+		}
+	}
+	g_strfreev(groups);
 }
 
 Config * config_init(void)
@@ -216,10 +256,58 @@ Config * config_init(void)
 		config_keyfile_set_defaults(cfg);
 		config_keyfile_save(cfg);
 	}
+	else
+		config_init_boards_from_keyfile(cfg);
 	return cfg;
 }
 
 /* ------------------------------------------------------------------- */
+
+static void board_to_keyfile(Config *cfg, const SettingTemplate **templates, const KnownBoard *kb)
+{
+	for(const SettingTemplate *here = *templates; here != NULL; here = *++templates)
+		keyfile_add_from_template(cfg->keyfile, kb->group, here);
+}
+
+static void config_keyfile_board_copy_values(Config *dst, const Config *src, const KnownBoard *board)
+{
+	/* For this, we need to call config_keyfile_copy_with_templates() which
+	 * means we have to have an "ordinary-looking" (grouped) template vector.
+	 * So, let's conjure one, temporarily.
+	*/
+	const SettingTemplate *to_copy[(sizeof board_settings / sizeof *board_settings) + 1] = {
+		[0] = &(const SettingTemplate) { .type = SIMPLETYPE_GROUP, .key = board->group },
+	};
+	for(size_t i = 0; i < sizeof board_settings / sizeof *board_settings; ++i)
+		to_copy[1 + i] = board_settings[i];
+	config_keyfile_copy_with_templates(dst, src, to_copy);
+}
+
+static void known_board_copy(Config *dst, const Config *src, const KnownBoard *board)
+{
+	KnownBoard *kb_copy = g_malloc(sizeof *kb_copy);
+	*kb_copy = *(KnownBoard *) board;
+	g_hash_table_insert(dst->known_boards, &kb_copy->id, kb_copy);
+	board_to_keyfile(dst, board_settings, kb_copy);
+	config_keyfile_board_copy_values(dst, src, board);
+}
+
+typedef struct {
+	Config		*cfg;
+	const Config	*original;
+} KnownBoardCopyInfo;
+
+static void cb_known_board_copy(gpointer key, gpointer value, gpointer user)
+{
+	const KnownBoardCopyInfo *info = user;
+	known_board_copy(info->cfg, info->original, value);
+}
+
+static void config_known_boards_copy(Config *cfg, const Config *original)
+{
+	KnownBoardCopyInfo info = { .cfg = cfg, .original = original };	/* We can only pass one argument to foreach(). */
+	g_hash_table_foreach(original->known_boards, cb_known_board_copy, &info);
+}
 
 Config * config_copy(const Config *cfg)
 {
@@ -228,8 +316,21 @@ Config * config_copy(const Config *cfg)
 
 	Config *copy = config_new();
 	copy->keyfile = g_key_file_new();
-
 	config_keyfile_copy_with_templates(copy, cfg, global_settings);
+	config_known_boards_copy(copy, cfg);
+
+	return copy;
+}
+
+/* Creates a very limited copy of cfg, featuring only the group corresponding to the given board. */
+Config * config_copy_partial(const Config *cfg, const KnownBoard *board)
+{
+	if(cfg == NULL || board == NULL)
+		return NULL;
+
+	Config *copy = config_new();
+	copy->keyfile = g_key_file_new();
+	known_board_copy(copy, cfg, board);
 
 	return copy;
 }
@@ -239,28 +340,34 @@ bool config_save(const Config *cfg)
 	return config_keyfile_save(cfg);
 }
 
+static void cb_known_board_free(gpointer key, gpointer value, gpointer user)
+{
+	g_free(value);
+}
+
 void config_delete(Config *cfg)
 {
 	if(cfg != NULL)
 	{
+		g_hash_table_foreach(cfg->known_boards, cb_known_board_free, NULL);
+		g_hash_table_destroy(cfg->known_boards);
 		g_key_file_free(cfg->keyfile);
-		g_hash_table_destroy(cfg->meta);
 		g_free(cfg);
 	}
 }
 
 /* ------------------------------------------------------------------- */
 
-static void widget_data_set(GtkWidget *wid, const char *group, const SettingTemplate *template)
+static void object_data_set(GObject *obj, const char *group, const SettingTemplate *template)
 {
-	g_object_set_data(G_OBJECT(wid), "group", (gpointer) group);
-	g_object_set_data(G_OBJECT(wid), "template", (gpointer) template);
+	g_object_set_data(obj, "group", (gpointer) group);
+	g_object_set_data(obj, "template", (gpointer) template);
 }
 
-static void widget_data_get(GtkWidget *wid, const char **group, const SettingTemplate **template)
+static void object_data_get(GObject *obj, const char **group, const SettingTemplate **template)
 {
-	*group = g_object_get_data(G_OBJECT(wid), "group");
-	*template = g_object_get_data(G_OBJECT(wid), "template");
+	*group = g_object_get_data(obj, "group");
+	*template = g_object_get_data(obj, "template");
 }
 
 static void evt_check_button_toggled(GtkWidget *wid, gpointer user)
@@ -269,56 +376,180 @@ static void evt_check_button_toggled(GtkWidget *wid, gpointer user)
 	const SettingTemplate *template;
 	Config *cfg = user;
 
-	widget_data_get(wid, &group, &template);
+	object_data_get(G_OBJECT(wid), &group, &template);
 	const gboolean value = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(wid));
 	g_key_file_set_boolean(cfg->keyfile, group, template->key, value);
 }
 
 static void init_check_button(GtkWidget *wid, Config *cfg, const char *group, const SettingTemplate *template)
 {
-	widget_data_set(wid, group, template);
+	object_data_set(G_OBJECT(wid), group, template);
 	const gboolean value = g_key_file_get_boolean(cfg->keyfile, group, template->key, NULL);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(wid), value);
 	g_signal_connect(G_OBJECT(wid), "toggled", G_CALLBACK(evt_check_button_toggled), cfg);
 }
 
-static GtkWidget * build_editor_from_templates(Config *cfg, const SettingTemplate **templates)
+static void evt_string_edited(GObject *obj, Config *cfg)
+{
+	const char *group;
+	const SettingTemplate *template;
+
+	object_data_get(obj, &group, &template);
+	const gchar *text = gtk_entry_buffer_get_text(GTK_ENTRY_BUFFER(obj));
+	g_key_file_set_string(cfg->keyfile, group, template->key, text);
+}
+
+static void evt_string_inserted_text(GObject *obj, guint position, gchar *chars, guint n_chars, gpointer user)
+{
+	evt_string_edited(obj, user);
+}
+
+static void evt_string_deleted_text(GObject *obj, guint position, guint n_chars, gpointer user)
+{
+	evt_string_edited(obj, user);
+}
+
+static void init_entry(GtkWidget *wid, Config *cfg, const char *group, const SettingTemplate *template)
+{
+	gchar *s = g_key_file_get_string(cfg->keyfile, group, template->key, NULL);
+	gtk_entry_set_text(GTK_ENTRY(wid), s);
+	g_free(s);
+	GtkEntryBuffer *buf = gtk_entry_get_buffer(GTK_ENTRY(wid));
+	object_data_set(G_OBJECT(buf), group, template);
+	g_signal_connect(G_OBJECT(buf), "inserted_text", G_CALLBACK(evt_string_inserted_text), cfg);
+	g_signal_connect(G_OBJECT(buf), "deleted_text", G_CALLBACK(evt_string_deleted_text), cfg);
+}
+
+static GtkWidget * build_editor_from_templates(Config *cfg, const char *group, const char *group_comment, const SettingTemplate **templates)
 {
 	GtkWidget *frame = NULL, *grid = NULL, *wid;
-	const char *group = NULL;
 	int y = 0;
 
 	for(const SettingTemplate *here = *templates; here != NULL; here = *++templates)
 	{
+		if(group != NULL && frame == NULL)
+		{
+			frame = gtk_frame_new(group_comment);
+			grid = gtk_grid_new();
+			gtk_container_add(GTK_CONTAINER(frame), grid);
+		}
+
+		wid = NULL;
 		switch(here->type)
 		{
 		case SIMPLETYPE_GROUP:
 			group = here->key;
-			frame = gtk_frame_new(here->comment);
-			grid = gtk_grid_new();
-			gtk_container_add(GTK_CONTAINER(frame), grid);
+			group_comment = here->comment;
 			break;
 		case SIMPLETYPE_BOOLEAN:
 			wid = gtk_check_button_new_with_label(here->comment);
 			init_check_button(wid, cfg, group, here);
-			gtk_grid_attach(GTK_GRID(grid), wid, 0, y, 1, 1);
-			++y;
+			break;
+		case SIMPLETYPE_STRING:
+			{
+				wid = gtk_grid_new();
+				GtkWidget *label = gtk_label_new(here->comment);
+				gtk_grid_attach(GTK_GRID(wid), label, 0, 0, 1, 1);
+				GtkWidget *entry = gtk_entry_new();
+				init_entry(entry, cfg, group, here);
+				gtk_widget_set_hexpand(entry, TRUE);
+				gtk_grid_attach(GTK_GRID(wid), entry, 1, 0, 1, 1);
+			}
 			break;
 		default:
 			break;
+		}
+		if(wid != NULL)
+		{
+			gtk_grid_attach(GTK_GRID(grid), wid, 0, y, 1, 1);
+			++y;
 		}
 	}
 	return frame;
 }
 
-Config * config_edit(const Config *cfg, GtkWindow *parent)
+static void evt_boards_row_activated(GtkWidget *wid, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user)
+{
+	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(wid));
+	GtkTreeIter iter;
+
+	if(gtk_tree_model_get_iter(model, &iter, path))
+	{
+		gpointer tmp;
+		gtk_tree_model_get(model, &iter, 2, &tmp, -1);
+		const KnownBoard *kb = tmp;
+		Config *cfg = user;
+		/* Create a "sub-copy" of the current editing Config, featuring only this board. */
+		Config *copy = config_copy_partial(cfg, kb);
+		GtkWidget *dlg = gtk_dialog_new_with_buttons("Board settings", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+		GtkWidget *editor = build_editor_from_templates(copy, kb->group, "Board settings", board_settings);
+		gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dlg))), editor);
+		gtk_widget_show_all(editor);
+		const gint response = gtk_dialog_run(GTK_DIALOG(dlg));
+		gtk_widget_destroy(dlg);
+		if(response == GTK_RESPONSE_OK)
+		{
+			config_keyfile_board_copy_values(cfg, copy, kb);
+			gchar *s = g_key_file_get_string(cfg->keyfile, kb->group, TMPL_REF(board_name).key, NULL);
+			gtk_list_store_set(GTK_LIST_STORE(model), &iter, 0, s, -1);
+			g_free(s);
+		}
+		config_delete(copy);
+	}
+}
+
+static GtkWidget * build_editor_for_boards(const Config *cfg)
+{
+	GtkWidget *grid = gtk_grid_new();
+	GtkListStore *store = gtk_list_store_new(3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_POINTER);
+
+	GHashTableIter iter;
+	g_hash_table_iter_init(&iter, cfg->known_boards);
+	gpointer key, value;
+	while(g_hash_table_iter_next(&iter, &key, &value))
+	{
+		const KnownBoard *kb = value;
+		GtkTreeIter liter;
+		gtk_list_store_append(store, &liter);
+		char group[64];
+		if(boardid_to_keyfile_group(&kb->id, group, sizeof group))
+		{
+			gchar *s = g_key_file_get_string(cfg->keyfile, group, TMPL_REF(board_name).key, NULL);
+			gtk_list_store_set(store, &liter, 0, s, 1, kb->id.board, 2, kb,-1);
+			g_free(s);
+		}
+	}
+
+	GtkWidget *view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
+	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
+	GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes("Name", renderer, "text", 0, NULL);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(view), column);
+	column = gtk_tree_view_column_new_with_attributes("Board Model", renderer, "text", 1, NULL);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(view), column);
+	gtk_widget_set_hexpand(view, TRUE);
+	gtk_widget_set_vexpand(view, TRUE);
+	g_signal_connect(G_OBJECT(view), "row_activated", G_CALLBACK(evt_boards_row_activated), (gpointer) cfg);
+	gtk_grid_attach(GTK_GRID(grid), view, 0, 0, 1, 1);
+
+	return grid;
+}
+
+Config * config_edit(const Config *cfg, GtkWindow *parent, GuiInfo *gui)
 {
 	Config *editing = config_copy(cfg);
 
 	GtkWidget *dlg = gtk_dialog_new_with_buttons("Preferences", parent, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+	GtkWidget *grid = gtk_grid_new();
 
-	GtkWidget *global = build_editor_from_templates(editing, global_settings);
-	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dlg))), global);
+	GtkWidget *global = build_editor_from_templates(editing, NULL, NULL, global_settings);
+	gtk_grid_attach(GTK_GRID(grid), global, 0, 0, 1, 1);
+
+	GtkWidget *boards = gtk_frame_new("Known boards");
+	GtkWidget *be = build_editor_for_boards(editing);
+	gtk_container_add(GTK_CONTAINER(boards), be);
+	gtk_grid_attach(GTK_GRID(grid), boards, 0, 1, 1, 1);
+
+	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dlg))), grid);
 
 	gtk_widget_show_all(dlg);
 	const gint response = gtk_dialog_run(GTK_DIALOG(dlg));
@@ -330,6 +561,29 @@ Config * config_edit(const Config *cfg, GtkWindow *parent)
 		editing = NULL;
 	}
 	return editing;
+}
+
+/* ------------------------------------------------------------------- */
+
+void config_update_boards(Config *cfg, const GSList *autodetected)
+{
+	for(; autodetected != NULL; autodetected = g_slist_next(autodetected))
+	{
+		const AutodetectedTarget *at = autodetected->data;
+		KnownBoard *kb = g_hash_table_lookup(cfg->known_boards, &at->id);
+		if(kb == NULL)
+		{
+			kb = g_malloc(sizeof *kb);
+			kb->id = at->id;
+			if(boardid_to_keyfile_group(&kb->id, kb->group, sizeof kb->group))
+			{
+				g_hash_table_insert(cfg->known_boards, &kb->id, kb);
+				board_to_keyfile(cfg, board_settings, kb);
+			}
+			else
+				g_error("Failed to build GKeyFile group name for BoardId");
+		}
+	}
 }
 
 /* ------------------------------------------------------------------- */

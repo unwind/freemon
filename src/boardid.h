@@ -34,10 +34,14 @@ typedef struct {
 
 /* ------------------------------------------------------------------- */
 
-void	boardid_init(BoardId *id);
-bool	boardid_valid(const BoardId *id);
-bool	boardid_equal(const BoardId *id1, const BoardId *id2);
+void		boardid_init(BoardId *id);
+bool		boardid_valid(const BoardId *id);
+guint		boardid_hash(gconstpointer key);
+gboolean	boardid_equal(gconstpointer a, gconstpointer b);
 
-bool	boardid_set_from_target(BoardId *id, const char *path);
+bool		boardid_set_from_target(BoardId *id, const char *path);
+
+bool		boardid_to_keyfile_group(const BoardId *id, char *group, size_t group_max);
+bool		boardid_from_keyfile_group(BoardId *id, const char *group);
 
 #endif		/* BOARDID_H_ */

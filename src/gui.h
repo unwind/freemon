@@ -25,29 +25,12 @@
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
-#include "config.h"
+#include "freemon.h"
 #include "target.h"
 
-typedef struct {
-	Config		*config;
+GuiInfo *	gui_init(const char *title);
 
-	GtkAction	*action_about;
-	GtkAction	*action_config;
-
-	GSList		*available_targets;	/* From autodetect_all(). */
-	GtkWidget	*toolbar;
-	GtkToolItem	*targets;
-	GtkWidget	*notebook;
-
-	GtkWidget	*binary;	/* A GtkFileChooserButton. */
-	GtkWidget	*terminal;	/* A VteTerminal. */
-	GtkWidget	*grid;
-	void		(*keyhandler)(guint32 unicode, gpointer user);
-	gpointer	keyhandler_user;
-	GtkWidget	*terminal_menu;	/* A GtkMenu. */
-} GuiInfo;
-
-GtkWidget *	gui_init(GuiInfo *gui, const char *title);
+GtkWidget *	gui_mainwindow_get(GuiInfo *gui);
 
 Config *	gui_config_get(GuiInfo *gui);
 void		gui_config_set(GuiInfo *gui, Config *cfg);
