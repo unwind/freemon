@@ -211,9 +211,8 @@ static bool config_keyfile_save(const Config *cfg)
 		GError *error = NULL;
 		ok = g_file_replace_contents(file, data, length, NULL, FALSE, G_FILE_CREATE_NONE, NULL, NULL, &error);
 		g_object_unref(G_OBJECT(file));
+		g_free(data);
 	}
-	g_free(data);
-
 	return ok;
 }
 
@@ -458,16 +457,13 @@ static void evt_boards_row_activated(GtkWidget *wid, GtkTreePath *path, GtkTreeV
 		gpointer tmp;
 		gtk_tree_model_get(model, &iter, 2, &tmp, -1);
 		const KnownBoard *kb = tmp;
-		char group[64];
-		if(boardid_to_keyfile_group(&kb->id, group, sizeof group))
-		{
-			GtkWidget *editor = build_editor_from_templates(cfg, group, "Board settings", board_settings);
-			GtkWidget *dlg = gtk_dialog_new_with_buttons("Board settings", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK/*, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL*/, NULL);
-			gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dlg))), editor);
-			gtk_widget_show_all(editor);
-			gtk_dialog_run(GTK_DIALOG(dlg));
-			gtk_widget_destroy(dlg);
-		}
+		printf("activating row '%s'\n", kb->group);
+		GtkWidget *editor = build_editor_from_templates(cfg, kb->group, "Board settings", board_settings);
+		GtkWidget *dlg = gtk_dialog_new_with_buttons("Board settings", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK/*, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL*/, NULL);
+		gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dlg))), editor);
+		gtk_widget_show_all(editor);
+		gtk_dialog_run(GTK_DIALOG(dlg));
+		gtk_widget_destroy(dlg);
 	}
 }
 
