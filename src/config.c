@@ -269,6 +269,29 @@ static void board_to_keyfile(Config *cfg, const SettingTemplate **templates, con
 		keyfile_add_from_template(cfg->keyfile, kb->group, here);
 }
 
+static void config_keyfile_board_copy_values(Config *dst, const Config *src, const KnownBoard *board)
+{
+	/* For this, we need to call config_keyfile_copy_with_templates() which
+	 * means we have to have an "ordinary-looking" (grouped) template vector.
+	 * So, let's conjure one, temporarily.
+	*/
+	const SettingTemplate *to_copy[(sizeof board_settings / sizeof *board_settings) + 1] = {
+		[0] = &(const SettingTemplate) { .type = SIMPLETYPE_GROUP, .key = board->group },
+	};
+	for(size_t i = 0; i < sizeof board_settings / sizeof *board_settings; ++i)
+		to_copy[1 + i] = board_settings[i];
+	config_keyfile_copy_with_templates(dst, src, to_copy);
+}
+
+static void known_board_copy(Config *dst, const Config *src, const KnownBoard *board)
+{
+	KnownBoard *kb_copy = g_malloc(sizeof *kb_copy);
+	*kb_copy = *(KnownBoard *) board;
+	g_hash_table_insert(dst->known_boards, &kb_copy->id, kb_copy);
+	board_to_keyfile(dst, board_settings, kb_copy);
+	config_keyfile_board_copy_values(dst, src, board);
+}
+
 typedef struct {
 	Config		*cfg;
 	const Config	*original;
@@ -277,21 +300,7 @@ typedef struct {
 static void cb_known_board_copy(gpointer key, gpointer value, gpointer user)
 {
 	const KnownBoardCopyInfo *info = user;
-	KnownBoard *kb_copy = g_malloc(sizeof *kb_copy);
-	*kb_copy = *(KnownBoard *) value;
-	g_hash_table_insert(info->cfg->known_boards, &kb_copy->id, kb_copy);
-	board_to_keyfile(info->cfg, board_settings, kb_copy);
-	/* Now that the settings are copied, do it again to get the actual values. 
-	 * For this, we need to call config_keyfile_copy_with_templates() which
-	 * means we have to have an "ordinary-looking" (grouped) template vector.
-	 * So, let's conjure one, temporarily.
-	*/
-	const SettingTemplate *to_copy[(sizeof board_settings / sizeof *board_settings) + 1] = {
-		[0] = &(const SettingTemplate) { .type = SIMPLETYPE_GROUP, .key = kb_copy->group },
-	};
-	for(size_t i = 0; i < sizeof board_settings / sizeof *board_settings; ++i)
-		to_copy[1 + i] = board_settings[i];
-	config_keyfile_copy_with_templates(info->cfg, info->original, to_copy);
+	known_board_copy(info->cfg, info->original, value);
 }
 
 static void config_known_boards_copy(Config *cfg, const Config *original)
@@ -309,6 +318,19 @@ Config * config_copy(const Config *cfg)
 	copy->keyfile = g_key_file_new();
 	config_keyfile_copy_with_templates(copy, cfg, global_settings);
 	config_known_boards_copy(copy, cfg);
+
+	return copy;
+}
+
+/* Creates a very limited copy of cfg, featuring only the group corresponding to the given board. */
+Config * config_copy_partial(const Config *cfg, const KnownBoard *board)
+{
+	if(cfg == NULL || board == NULL)
+		return NULL;
+
+	Config *copy = config_new();
+	copy->keyfile = g_key_file_new();
+	known_board_copy(copy, cfg, board);
 
 	return copy;
 }
@@ -448,7 +470,6 @@ static GtkWidget * build_editor_from_templates(Config *cfg, const char *group, c
 
 static void evt_boards_row_activated(GtkWidget *wid, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user)
 {
-	Config *cfg = user;
 	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(wid));
 	GtkTreeIter iter;
 
@@ -457,13 +478,23 @@ static void evt_boards_row_activated(GtkWidget *wid, GtkTreePath *path, GtkTreeV
 		gpointer tmp;
 		gtk_tree_model_get(model, &iter, 2, &tmp, -1);
 		const KnownBoard *kb = tmp;
-		printf("activating row '%s'\n", kb->group);
-		GtkWidget *editor = build_editor_from_templates(cfg, kb->group, "Board settings", board_settings);
-		GtkWidget *dlg = gtk_dialog_new_with_buttons("Board settings", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK/*, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL*/, NULL);
+		Config *cfg = user;
+		/* Create a "sub-copy" of the current editing Config, featuring only this board. */
+		Config *copy = config_copy_partial(cfg, kb);
+		GtkWidget *dlg = gtk_dialog_new_with_buttons("Board settings", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
+		GtkWidget *editor = build_editor_from_templates(copy, kb->group, "Board settings", board_settings);
 		gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dlg))), editor);
 		gtk_widget_show_all(editor);
-		gtk_dialog_run(GTK_DIALOG(dlg));
+		const gint response = gtk_dialog_run(GTK_DIALOG(dlg));
 		gtk_widget_destroy(dlg);
+		if(response == GTK_RESPONSE_OK)
+		{
+			config_keyfile_board_copy_values(cfg, copy, kb);
+			gchar *s = g_key_file_get_string(cfg->keyfile, kb->group, TMPL_REF(board_name).key, NULL);
+			gtk_list_store_set(GTK_LIST_STORE(model), &iter, 0, s, -1);
+			g_free(s);
+		}
+		config_delete(copy);
 	}
 }
 
