@@ -24,9 +24,11 @@
 
 #include <gtk/gtk.h>
 
+#include "boardid.h"
+
 typedef struct Target	Target;
 
-Target *	target_new_serial(const char *name, const char *tty_device, const char *upload_path);
+Target *	target_new_serial(const BoardId *id, const char *tty_device, const char *upload_path);
 void		target_destroy(Target *target);
 
 const char *	target_get_name(const Target *target);

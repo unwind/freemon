@@ -23,6 +23,7 @@
 #include <vte/vte.h>
 
 #include "action-upload.h"
+#include "config.h"
 #include "tty.h"
 
 #include "target.h"
@@ -30,6 +31,8 @@
 /* ------------------------------------------------------------------- */
 
 struct Target {
+	BoardId		id;
+
 	char		name[32];
 	TtyInfo		*tty;
 	char		upload_path[2048];
@@ -45,13 +48,14 @@ struct Target {
 	GtkWidget	*binary_info;	// A GtkLabel.
 };
 
-/* ------------------------------------------------------------------- */
+/* --------------------------------------o----------------------------- */
 
-Target * target_new_serial(const char *name, const char *tty_device, const char *upload_path)
+Target * target_new_serial(const BoardId *id, const char *tty_device, const char *upload_path)
 {
 	Target	*target = g_malloc(sizeof *target);
 
-	g_strlcpy(target->name, name, sizeof target->name);
+	target->id = *id;
+	config_board_get_name(NULL, id, target->name, sizeof target->name);
 	g_strlcpy(target->upload_path, upload_path, sizeof target->upload_path);
 
 	target->gui = NULL;

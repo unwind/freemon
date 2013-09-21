@@ -597,3 +597,24 @@ bool config_get_autoconnect_once(const Config *cfg)
 {
 	return cfg != NULL ? g_key_file_get_boolean(cfg->keyfile, GRP_GLOBAL, TMPL_KEY(connect_first_on_first_autodetect), NULL) : false;
 }
+
+/* ------------------------------------------------------------------- */
+
+bool config_board_get_name(const Config *cfg, const BoardId *id, char *buf, size_t buf_max)
+{
+	if(cfg == NULL || id == NULL)
+		return false;
+	const KnownBoard *kb = g_hash_table_lookup(cfg->keyfile, id);
+	if(kb != NULL)
+	{
+		bool ret = false;
+		char *name = g_key_file_get_string(cfg->keyfile, kb->group, TMPL_KEY(board_name), NULL);
+		if(name != NULL)
+		{
+			ret = g_strlcpy(buf, name, buf_max) < buf_max;
+			g_free(name);
+		}
+		return ret;
+	}
+	return false;
+}
