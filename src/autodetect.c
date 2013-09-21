@@ -27,7 +27,7 @@
 
 /* ------------------------------------------------------------------- */
 
-bool autodetect_target_to_string(char *buf, size_t buf_max, const AutodetectedTarget *at)
+bool autodetect_target_to_string(const AutodetectedTarget *at, char *buf, size_t buf_max)
 {
 	return g_snprintf(buf, buf_max, "%s on %s", at->id.board, at->device) < buf_max;
 }

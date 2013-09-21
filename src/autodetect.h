@@ -35,7 +35,7 @@ typedef struct {
 
 GSList *	autodetect_all(void);
 
-bool		autodetect_target_to_string(char *buf, size_t buf_max, const AutodetectedTarget *at);
+bool		autodetect_target_to_string(const AutodetectedTarget *at, char *buf, size_t buf_max);
 
 void		autodetect_free(GSList *list);
 
