@@ -39,6 +39,8 @@ bool		boardid_valid(const BoardId *id);
 guint		boardid_hash(gconstpointer key);
 gboolean	boardid_equal(gconstpointer a, gconstpointer b);
 
+bool		boardid_to_string(const BoardId *id, char *buf, size_t buf_max);
+
 bool		boardid_set_from_target(BoardId *id, const char *path);
 
 bool		boardid_to_keyfile_group(const BoardId *id, char *group, size_t group_max);

@@ -446,15 +446,13 @@ static GtkWidget * build_editor_from_templates(Config *cfg, const char *group, c
 			init_check_button(wid, cfg, group, here);
 			break;
 		case SIMPLETYPE_STRING:
-			{
-				wid = gtk_grid_new();
-				GtkWidget *label = gtk_label_new(here->comment);
-				gtk_grid_attach(GTK_GRID(wid), label, 0, 0, 1, 1);
-				GtkWidget *entry = gtk_entry_new();
-				init_entry(entry, cfg, group, here);
-				gtk_widget_set_hexpand(entry, TRUE);
-				gtk_grid_attach(GTK_GRID(wid), entry, 1, 0, 1, 1);
-			}
+			wid = gtk_grid_new();
+			GtkWidget *label = gtk_label_new(here->comment);
+			gtk_grid_attach(GTK_GRID(wid), label, 0, 0, 1, 1);
+			GtkWidget *entry = gtk_entry_new();
+			init_entry(entry, cfg, group, here);
+			gtk_widget_set_hexpand(entry, TRUE);
+			gtk_grid_attach(GTK_GRID(wid), entry, 1, 0, 1, 1);
 			break;
 		default:
 			break;
@@ -484,7 +482,9 @@ static void evt_boards_row_activated(GtkWidget *wid, GtkTreePath *path, GtkTreeV
 		GtkWidget *dlg = gtk_dialog_new_with_buttons("Board settings", NULL, GTK_DIALOG_MODAL, GTK_STOCK_OK, GTK_RESPONSE_OK, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, NULL);
 		GtkWidget *editor = build_editor_from_templates(copy, kb->group, "Board settings", board_settings);
 		gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dlg))), editor);
-		gtk_widget_show_all(editor);
+		char tuid[64];
+		gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dlg))), gtk_label_new("Board ID: xxxx-yyyy-zzzz-wwww"));
+		gtk_widget_show_all(dlg);
 		const gint response = gtk_dialog_run(GTK_DIALOG(dlg));
 		gtk_widget_destroy(dlg);
 		if(response == GTK_RESPONSE_OK)

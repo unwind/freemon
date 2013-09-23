@@ -61,6 +61,13 @@ gboolean boardid_equal(gconstpointer a, gconstpointer b)
 	return TRUE;
 }
 
+bool boardid_to_string(const BoardId *id, char *buf, size_t buf_max)
+{
+	if(id == NULL || buf == NULL)
+		return false;
+	return g_snprintf(buf, buf_max, "%08x-%08x-%08x-%08x", id->tuid[0], id->tuid[1], id->tuid[2], id->tuid[3]) < buf_max;
+}
+
 /* ------------------------------------------------------------------- */
 
 static bool parse_html_input_board(BoardId *bid, const char *input, const char *end)
