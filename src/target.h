@@ -37,6 +37,8 @@ const char *	target_get_device(const Target *target);
 const char *	target_get_binary(const Target *target);
 const char *	target_get_upload_path(const Target *target);
 
+void		target_upload_complete(const Target *target);
+
 void		target_gui_terminal_set_keyhandler(Target *target, void (*handler)(guint32 unicode, gpointer user), gpointer user);
 void		target_gui_terminal_insert(Target *target, const char *text, size_t length);
 

@@ -43,5 +43,6 @@ bool		config_get_autodetect_on_startup(const Config *cfg);
 bool		config_get_autoconnect_once(const Config *cfg);
 
 bool		config_board_get_name(const Config *cfg, const BoardId *id, char *buf, size_t buf_max);
+bool		config_board_get_reset_tty_on_upload(const Config *cfg, const BoardId *id);
 
 #endif		/* CONFIG_H_ */

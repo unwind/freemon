@@ -40,7 +40,7 @@ static gboolean do_copy(const char *src_path, const char *dst_path)
 
 static void evt_upload_activate(GtkAction *action, gpointer user)
 {
-	Target	*target = user;
+	Target		*target = user;
 	char		tbuf[8192];
 	const char	*binary = target_get_binary(target);
 	const char	*path = target_get_upload_path(target);
@@ -56,7 +56,10 @@ static void evt_upload_activate(GtkAction *action, gpointer user)
 		++blast;
 	g_snprintf(tbuf, sizeof tbuf, "%s" G_DIR_SEPARATOR_S "%s", path, blast);
 
-	do_copy(binary, tbuf);	// TODO: Actually tracking and reporting any problem might be a good idea, here.
+	if(do_copy(binary, tbuf))	// TODO: Actually tracking and reporting any problem might be a good idea, here.
+	{
+		target_upload_complete(target);
+	}
 }
 
 /* ------------------------------------------------------------------- */
@@ -65,7 +68,7 @@ GtkAction * action_upload_new(Target *target)
 {
 	GtkAction	*upload;
 
-	upload = gtk_action_new("upload", "Upload", "Uploads selected binary to the FRDM board.", GTK_STOCK_MEDIA_PLAY);
+	upload = gtk_action_new("upload", "Upload", "Uploads (copies) the selected binary to the FRDM board.", GTK_STOCK_MEDIA_PLAY);
 	g_signal_connect(G_OBJECT(upload), "activate", G_CALLBACK(evt_upload_activate), target);
 
 	return upload;

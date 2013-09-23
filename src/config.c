@@ -625,3 +625,13 @@ bool config_board_get_name(const Config *cfg, const BoardId *id, char *buf, size
 	}
 	return false;
 }
+
+bool config_board_get_reset_tty_on_upload(const Config *cfg, const BoardId *id)
+{
+	if(cfg == NULL || id == NULL)
+		return false;
+	const KnownBoard *kb = g_hash_table_lookup(cfg->known_boards, id);
+	if(kb != NULL)
+		return g_key_file_get_boolean(cfg->keyfile, kb->group, TMPL_KEY(reset_tty_on_upload), NULL);
+	return false;
+}

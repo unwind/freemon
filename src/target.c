@@ -47,6 +47,8 @@ struct Target {
 
 	GtkWidget	*binary;	// A GtkFileChooserButton.
 	GtkWidget	*binary_info;	// A GtkLabel.
+
+	GuiInfo		*gui_info;	// Just handy to have around.
 };
 
 /* --------------------------------------o----------------------------- */
@@ -63,6 +65,7 @@ Target * target_new_from_autodetected(const AutodetectedTarget *at, GuiInfo *gui
 	target->keyhandler = NULL;
 	target->gui = NULL;
 	target->tty = tty_open(at->device, target);
+	target->gui_info = gui;
 
 	return target;
 }
@@ -241,6 +244,14 @@ void target_gui_terminal_set_keyhandler(Target *target, void (*handler)(guint32 
 void target_gui_terminal_insert(Target *target, const char *text, size_t length)
 {
 	vte_terminal_feed(VTE_TERMINAL(target->terminal), text, length);
+}
+
+void target_upload_complete(const Target *target)
+{
+	if(config_board_get_reset_tty_on_upload(gui_config_get(target->gui_info), &target->id))
+	{
+		vte_terminal_reset(VTE_TERMINAL(target->terminal), TRUE, TRUE);
+	}
 }
 
 void target_gui_destroy(Target *target)
