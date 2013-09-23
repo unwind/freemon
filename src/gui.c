@@ -66,7 +66,7 @@ static void cb_menu_remove_child(GtkWidget *wid, gpointer user)
 
 static void autodetected_target_connect(const AutodetectedTarget *at, GuiInfo *gui)
 {
-	Target *t = target_new_serial(&at->id, at->device, at->path);
+	Target *t = target_new_from_autodetected(at, gui);
 	gui_target_add(gui, t);
 }
 

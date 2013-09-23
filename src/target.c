@@ -23,6 +23,7 @@
 #include <vte/vte.h>
 
 #include "action-upload.h"
+#include "autodetect.h"
 #include "config.h"
 #include "tty.h"
 
@@ -50,18 +51,18 @@ struct Target {
 
 /* --------------------------------------o----------------------------- */
 
-Target * target_new_serial(const BoardId *id, const char *tty_device, const char *upload_path)
+Target * target_new_from_autodetected(const AutodetectedTarget *at, GuiInfo *gui)
 {
 	Target	*target = g_malloc(sizeof *target);
 
-	target->id = *id;
-	config_board_get_name(NULL, id, target->name, sizeof target->name);
-	g_strlcpy(target->upload_path, upload_path, sizeof target->upload_path);
+	target->id = at->id;
+	config_board_get_name(gui_config_get(gui), &target->id, target->name, sizeof target->name);
+	g_strlcpy(target->upload_path, at->path, sizeof target->upload_path);
 
 	target->gui = NULL;
 	target->keyhandler = NULL;
 	target->gui = NULL;
-	target->tty = tty_open(target, TTY_TYPE_SERIAL, tty_device);
+	target->tty = tty_open(target, TTY_TYPE_SERIAL, at->device);
 
 	return target;
 }

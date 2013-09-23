@@ -604,7 +604,7 @@ bool config_board_get_name(const Config *cfg, const BoardId *id, char *buf, size
 {
 	if(cfg == NULL || id == NULL)
 		return false;
-	const KnownBoard *kb = g_hash_table_lookup(cfg->keyfile, id);
+	const KnownBoard *kb = g_hash_table_lookup(cfg->known_boards, id);
 	if(kb != NULL)
 	{
 		bool ret = false;
