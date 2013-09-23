@@ -27,13 +27,20 @@
 
 #include "boardid.h"
 
+/* ------------------------------------------------------------------- */
+
 typedef struct {
 	char	device[32];	/* Serial port device (for terminal). */
 	char	path[64];	/* Mountpoint (for upload). */
 	BoardId	id;
+	char	name[32];	/* Initialized by the config module. */
 } AutodetectedTarget;
 
+/* ------------------------------------------------------------------- */
+
 GSList *	autodetect_all(void);
+
+void		autodetect_target_set_name(AutodetectedTarget *at, const char *name);
 
 bool		autodetect_target_to_string(const AutodetectedTarget *at, char *buf, size_t buf_max);
 

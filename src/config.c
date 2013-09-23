@@ -569,7 +569,7 @@ void config_update_boards(Config *cfg, const GSList *autodetected)
 {
 	for(; autodetected != NULL; autodetected = g_slist_next(autodetected))
 	{
-		const AutodetectedTarget *at = autodetected->data;
+		AutodetectedTarget *at = autodetected->data;
 		KnownBoard *kb = g_hash_table_lookup(cfg->known_boards, &at->id);
 		if(kb == NULL)
 		{
@@ -582,6 +582,13 @@ void config_update_boards(Config *cfg, const GSList *autodetected)
 			}
 			else
 				g_error("Failed to build GKeyFile group name for BoardId");
+		}
+		else
+		{
+			char name[32];
+
+			if(config_board_get_name(cfg, &kb->id, name, sizeof name))
+				autodetect_target_set_name(at, name);
 		}
 	}
 }

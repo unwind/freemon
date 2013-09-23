@@ -184,8 +184,7 @@ static void evt_targets_refresh_clicked(GtkToolButton *btn, gpointer user)
 		for(GSList *iter = targets; iter != NULL; iter = g_slist_next(iter))
 		{
 			const AutodetectedTarget *at = iter->data;
-			gchar buf[128];
-			g_snprintf(buf, sizeof buf, "%s (on %s)", at->device, at->path);
+			char buf[128];
 			autodetect_target_to_string(at, buf, sizeof buf);
 			GtkWidget *tmi = gtk_menu_item_new_with_label(buf);
 			g_object_set_data(G_OBJECT(tmi), "target", (gpointer) at);

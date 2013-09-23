@@ -27,8 +27,15 @@
 
 /* ------------------------------------------------------------------- */
 
+void autodetect_target_set_name(AutodetectedTarget *at, const char *name)
+{
+	g_strlcpy(at->name, name, sizeof at->name);
+}
+
 bool autodetect_target_to_string(const AutodetectedTarget *at, char *buf, size_t buf_max)
 {
+	if(at->name[0] != '\0')
+		return g_snprintf(buf, buf_max, "%s [%s on %s]", at->name, at->id.board, at->device) < buf_max;
 	return g_snprintf(buf, buf_max, "%s on %s", at->id.board, at->device) < buf_max;
 }
 
