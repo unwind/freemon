@@ -22,9 +22,9 @@
 #include <stdlib.h>
 
 #include "autodetect.h"
+#include "config.h"
 #include "gui.h"
 #include "target.h"
-#include "tty.h"
 
 int main(int argc, char *argv[])
 {

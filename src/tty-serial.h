@@ -1,5 +1,5 @@
 /*
- * Freemon: TTY serial port module. Never include this directly, use "tty.h".
+ * Freemon: TTY serial port module.
  *
  * Copyright 2013 Emil Brink <emil@obsession.se>.
  * 
@@ -22,9 +22,14 @@
 #if !defined TTY_SERIAL_H_
 #define	TTY_SERIAL_H_
 
+#include "target.h"
+
 /* ------------------------------------------------------------------- */
 
+typedef struct TtyInfo	TtyInfo;
+
 TtyInfo *	tty_serial_open(const char *device, Target *target);
+const char *	tty_serial_get_device(const TtyInfo *tty);
 void		tty_serial_close(TtyInfo *tty);
 
 #endif		/* TTY_SERIAL_H_ */

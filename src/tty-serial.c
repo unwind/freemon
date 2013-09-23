@@ -29,15 +29,16 @@
 
 #include <gdk/gdk.h>
 
-#include "tty.h"
+#include "tty-serial.h"
 
 /* ------------------------------------------------------------------- */
 
-typedef struct {
-	TtyInfo		tty;
+struct TtyInfo {
+	const gchar	*device;
+	guint		handle;
 	unsigned int	baud_rate;
 	int		fd;
-} TtyInfoSerial;
+};
 
 /* ------------------------------------------------------------------- */
 
@@ -91,12 +92,12 @@ static void cb_keypress(guint32 unicode, gpointer user)
 {
 	char	out[1] = { unicode & 0xff };
 
-	write(((TtyInfoSerial *) user)->fd, out, 1);
+	write(((TtyInfo *) user)->fd, out, 1);
 }
 
 TtyInfo * tty_serial_open(const char *device, Target *target)
 {
-	TtyInfoSerial	*serial;
+	TtyInfo	*serial;
 
 	serial = g_malloc(sizeof *serial);
 	errno = 0;
@@ -106,11 +107,11 @@ TtyInfo * tty_serial_open(const char *device, Target *target)
 		/* Configure serial port. */
 		serial_configure(serial->fd);
 
-		serial->tty.handle = g_unix_fd_add(serial->fd, G_IO_IN, cb_serial, target);
-		if(serial->tty.handle != 0)
+		serial->handle = g_unix_fd_add(serial->fd, G_IO_IN, cb_serial, target);
+		if(serial->handle != 0)
 		{
 			target_gui_terminal_set_keyhandler(target, cb_keypress, serial);
-			return &serial->tty;	/* Avoids cast. :) */
+			return serial;
 		}
 		close(serial->fd);
 	}
@@ -124,9 +125,14 @@ TtyInfo * tty_serial_open(const char *device, Target *target)
 	return NULL;
 }
 
+const char * tty_serial_get_device(const TtyInfo *tty)
+{
+	return tty != NULL ? tty->device : NULL;
+}
+
 void tty_serial_close(TtyInfo *tty)
 {
 	g_source_remove(tty->handle);
-	close(((TtyInfoSerial *) tty)->fd);
+	close(((TtyInfo *) tty)->fd);
 	g_free(tty);
 }
