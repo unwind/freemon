@@ -1,5 +1,5 @@
 /*
- * Freemon: TTY serial port module.
+ * Freemon: TTY (serial port) module.
  *
  * Copyright 2013 Emil Brink <emil@obsession.se>.
  * 
@@ -29,7 +29,7 @@
 
 #include <gdk/gdk.h>
 
-#include "tty-serial.h"
+#include "tty.h"
 
 /* ------------------------------------------------------------------- */
 
@@ -95,7 +95,7 @@ static void cb_keypress(guint32 unicode, gpointer user)
 	write(((TtyInfo *) user)->fd, out, 1);
 }
 
-TtyInfo * tty_serial_open(const char *device, Target *target)
+TtyInfo * tty_open(const char *device, Target *target)
 {
 	TtyInfo	*serial;
 
@@ -125,12 +125,12 @@ TtyInfo * tty_serial_open(const char *device, Target *target)
 	return NULL;
 }
 
-const char * tty_serial_get_device(const TtyInfo *tty)
+const char * tty_get_device(const TtyInfo *tty)
 {
 	return tty != NULL ? tty->device : NULL;
 }
 
-void tty_serial_close(TtyInfo *tty)
+void tty_close(TtyInfo *tty)
 {
 	g_source_remove(tty->handle);
 	close(((TtyInfo *) tty)->fd);

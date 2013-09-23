@@ -25,7 +25,7 @@
 #include "action-upload.h"
 #include "autodetect.h"
 #include "config.h"
-#include "tty-serial.h"
+#include "tty.h"
 
 #include "target.h"
 
@@ -62,14 +62,14 @@ Target * target_new_from_autodetected(const AutodetectedTarget *at, GuiInfo *gui
 	target->gui = NULL;
 	target->keyhandler = NULL;
 	target->gui = NULL;
-	target->tty = tty_serial_open(at->device, target);
+	target->tty = tty_open(at->device, target);
 
 	return target;
 }
 
 void target_destroy(Target *target)
 {
-	tty_serial_close(target->tty);
+	tty_close(target->tty);
 	g_free(target);
 }
 
@@ -82,7 +82,7 @@ const char * target_get_name(const Target *target)
 
 const char * target_get_device(const Target *target)
 {
-	return tty_serial_get_device(target->tty);
+	return tty_get_device(target->tty);
 }
 
 const char * target_get_binary(const Target *target)
