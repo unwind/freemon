@@ -205,9 +205,9 @@ GtkWidget * target_gui_create(Target *target)
 	gtk_widget_set_hexpand(target->terminal, TRUE);
 	gtk_widget_set_vexpand(target->terminal, TRUE);
 	gtk_widget_set_halign(target->terminal, GTK_ALIGN_FILL);
-	gtk_grid_attach(GTK_GRID(target->gui), target->terminal, 0, 0, 5, 1);
+	gtk_grid_attach(GTK_GRID(target->gui), target->terminal, 0, 0, 6, 1);
 	GtkWidget *scbar = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(target->terminal)));
-	gtk_grid_attach(GTK_GRID(target->gui), scbar, 5, 0, 1, 1);
+	gtk_grid_attach(GTK_GRID(target->gui), scbar, 6, 0, 1, 1);
 
 	target->terminal_menu = gtk_menu_new();
 	GtkWidget *item = gtk_menu_item_new_with_label("Reset");
@@ -231,6 +231,10 @@ GtkWidget * target_gui_create(Target *target)
 	GtkWidget *btn = gtk_button_new();
 	gtk_activatable_set_related_action(GTK_ACTIVATABLE(btn), action_upload_new(target));
 	gtk_grid_attach(GTK_GRID(target->gui), btn, 3, 1, 1, 1);
+
+	btn = gtk_toggle_button_new();
+	gtk_activatable_set_related_action(GTK_ACTIVATABLE(btn), action_autoupload_new(target, target->binary));
+	gtk_grid_attach(GTK_GRID(target->gui), btn, 4, 1, 1, 1);
 
 	return target->gui;
 }
