@@ -22,6 +22,7 @@
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
+#include "action-autoupload.h"
 #include "action-upload.h"
 #include "autodetect.h"
 #include "config.h"
