@@ -26,6 +26,6 @@
 
 #include "gui.h"
 
-GtkAction * action_autoupload_new(Target *target, GtkWidget *filechooser);
+GtkAction * action_autoupload_new(Target *target, GtkWidget *filechooser, GtkAction *upload);
 
 #endif		/* ACTION_AUTO_UPLOAD_H_ */

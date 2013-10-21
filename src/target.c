@@ -73,7 +73,8 @@ Target * target_new_from_autodetected(const AutodetectedTarget *at, GuiInfo *gui
 
 void target_destroy(Target *target)
 {
-	tty_close(target->tty);
+	if(target->tty != NULL)
+		tty_close(target->tty);
 	g_free(target);
 }
 
@@ -230,11 +231,12 @@ GtkWidget * target_gui_create(Target *target)
 	gtk_grid_attach(GTK_GRID(target->gui), target->binary_info, 2, 1, 1, 1);
 
 	GtkWidget *btn = gtk_button_new();
-	gtk_activatable_set_related_action(GTK_ACTIVATABLE(btn), action_upload_new(target));
+	GtkAction *upload = action_upload_new(target);
+	gtk_activatable_set_related_action(GTK_ACTIVATABLE(btn), upload);
 	gtk_grid_attach(GTK_GRID(target->gui), btn, 3, 1, 1, 1);
 
 	btn = gtk_toggle_button_new();
-	gtk_activatable_set_related_action(GTK_ACTIVATABLE(btn), action_autoupload_new(target, target->binary));
+	gtk_activatable_set_related_action(GTK_ACTIVATABLE(btn), action_autoupload_new(target, target->binary, upload));
 	gtk_grid_attach(GTK_GRID(target->gui), btn, 4, 1, 1, 1);
 
 	return target->gui;
